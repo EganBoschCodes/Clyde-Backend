@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+uv sync
+sudo systemctl restart clyde-backend
+sudo systemctl --no-pager status clyde-backend
