@@ -10,7 +10,7 @@ from ..types import Event, EventContext
 
 
 DURATION_S = 5.0
-TICK_INTERVAL = 0.4
+TICK_INTERVAL = 0.2
 
 
 class MiniParty(Event):
