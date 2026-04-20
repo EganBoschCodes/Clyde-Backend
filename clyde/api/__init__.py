@@ -1,5 +1,6 @@
 from .add_schedule import add_schedule_route
 from .fire_event import fire_event_route
+from .list_events import list_events_route
 from .list_lights import list_lights_route
 from .list_rooms import list_rooms_route
 from .list_routines import list_routines_route

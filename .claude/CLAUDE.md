@@ -74,6 +74,7 @@ directly.
 - `home_assistant_lib` is a path dependency on sibling
   `../Home-Assistant-Lib` (see `[tool.uv.sources]` in `pyproject.toml`).
 - `uv sync` to install, `uv run scripts/rainbow.py` to run a script.
+- ALWAYS use the `write-python` tool before editing python files, you'll be prevented from editing until you do.
 
 ## Working style for agents
 
