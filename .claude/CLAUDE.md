@@ -20,19 +20,22 @@ directly.
 
 ## Package structure
 
+- `clyde/managers/` — orchestration layer for routines and events.
+  - `engine.py` — `Engine` singleton `ENGINE`, per-room dispatch.
+  - `room_manager.py` — `RoomManager` owns one room's active routine /
+    event, runs the tick loop, and handles event preemption with prior-
+    routine preserve-and-resume (or follow-up routine handoff).
 - `clyde/routines/` — room-scoped, long-running light behaviors.
   - `types.py` — `LightRoutine` ABC (`NAME`, `tick_interval`, async
     `step(now, lights) -> dict[str, LightOnPayload]`).
-  - `engine.py` — `RoutineEngine` singleton `ENGINE`, per-room dispatch.
-  - `manager.py` — `RoomRoutineManager` owns one room's active routine /
-    event, runs the tick loop, and handles event preemption with prior-
-    routine preserve-and-resume.
   - `routine_directory/` — concrete `LightRoutine` subclasses, one per
     file. Registered by `NAME` in `clyde/routines/__init__.py::ROUTINES`.
 - `clyde/events/` — room-scoped, transient behaviors that preempt the
-  active routine and restore it on completion.
-  - `types.py` — `Event` ABC (`NAME`, async `run(ctx: EventContext)`).
-    Events drive their own timing via `ctx.lights` and return when done.
+  active routine and either restore it or hand off to a follow-up routine.
+  - `types.py` — `Event` ABC (`NAME`, async
+    `run(ctx: EventContext) -> LightRoutine | None`). Events drive their
+    own timing via `ctx.lights`. Return a `LightRoutine` instance to start
+    it on completion; return `None` to restore the prior routine/state.
   - `event_directory/` — concrete `Event` subclasses. Registered in
     `clyde/events/__init__.py::EVENTS`.
 - `clyde/tools/` — MCP tool entrypoints (one file per tool).

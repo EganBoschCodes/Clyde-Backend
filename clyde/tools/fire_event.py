@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from clyde.events import EVENTS
 from clyde.mcp_app import MCP
-from clyde.routines import ENGINE
+from clyde.managers import ENGINE
 
 
 class FireEventResult(BaseModel):

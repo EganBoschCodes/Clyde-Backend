@@ -3,6 +3,8 @@ from typing import ClassVar
 
 from home_assistant_lib import LightOffPayload, LightOnPayload
 
+from clyde.routines.types import LightRoutine
+
 from ..types import Event, EventContext
 
 
@@ -16,7 +18,7 @@ BRIGHTNESS = 255
 class Notify(Event):
     NAME: ClassVar[str] = "notify"
 
-    async def run(self, ctx: EventContext) -> None:
+    async def run(self, ctx: EventContext) -> LightRoutine | None:
         on_payload = LightOnPayload(rgb_color=COLOR, brightness=BRIGHTNESS, transition=0.0)
         off_payload = LightOffPayload(transition=0.0)
         for _ in range(FLASHES):

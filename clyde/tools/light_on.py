@@ -2,7 +2,7 @@ from home_assistant_lib import LightOnPayload
 from pydantic import BaseModel
 
 from clyde.mcp_app import MCP
-from clyde.routines import ENGINE
+from clyde.managers import ENGINE
 
 
 class LightOnResult(BaseModel):

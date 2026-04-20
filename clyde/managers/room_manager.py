@@ -6,8 +6,7 @@ from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightStat
 import clyde.utils as utils
 
 from clyde.events.types import Event, EventContext
-
-from .types import LightRoutine
+from clyde.routines.types import LightRoutine
 
 
 HANDOFF_TRANSITION_S = 2.0
@@ -15,7 +14,7 @@ DEFAULT_OFF_TRANSITION_S = 1.0
 EVENT_RESTORE_TRANSITION_S = 0.3
 
 
-class RoomRoutineManager:
+class RoomManager:
     def __init__(self, room_name: str, lights: dict[str, Light]) -> None:
         self.room_name = room_name
         self.lights = lights
@@ -61,17 +60,24 @@ class RoomRoutineManager:
                     prior_states[key] = state
             await self.cancel_task()
             try:
-                await event.run(EventContext(lights=self.lights))
+                follow_up = await event.run(EventContext(lights=self.lights))
             except Exception as e:
+                await self.restore_after_event(prior_routine, prior_states)
                 return utils.err(e, f"event '{event.NAME}' in '{self.room_name}'")
-            finally:
-                if prior_routine is not None:
-                    self.active = prior_routine
-                    self.task = asyncio.create_task(self.run_loop(prior_routine))
-                else:
-                    for key, state in prior_states.items():
-                        await asyncio.to_thread(self.lights[key].restore, state, EVENT_RESTORE_TRANSITION_S)
+            if follow_up is not None:
+                self.active = follow_up
+                self.task = asyncio.create_task(self.run_loop(follow_up))
+            else:
+                await self.restore_after_event(prior_routine, prior_states)
             return utils.ok(None)
+
+    async def restore_after_event(self, prior_routine: LightRoutine | None, prior_states: dict[str, LightState]) -> None:
+        if prior_routine is not None:
+            self.active = prior_routine
+            self.task = asyncio.create_task(self.run_loop(prior_routine))
+            return
+        for key, state in prior_states.items():
+            await asyncio.to_thread(self.lights[key].restore, state, EVENT_RESTORE_TRANSITION_S)
 
     async def apply_on(self, light_key: str, payload: LightOnPayload) -> utils.Result[None]:
         stop_err = await self.stop()

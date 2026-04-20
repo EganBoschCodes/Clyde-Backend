@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 
 from clyde.events.event_directory import MiniParty
 from clyde.mcp_app import MCP
-from clyde.routines import ENGINE
+from clyde.managers import ENGINE
 
 import clyde.utils as utils
 

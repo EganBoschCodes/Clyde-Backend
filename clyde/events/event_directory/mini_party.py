@@ -4,6 +4,8 @@ from typing import ClassVar
 
 from home_assistant_lib import Light, LightOnPayload, hue_to_rgb
 
+from clyde.routines.types import LightRoutine
+
 from ..types import Event, EventContext
 
 
@@ -14,7 +16,7 @@ TICK_INTERVAL = 0.4
 class MiniParty(Event):
     NAME: ClassVar[str] = "mini_party"
 
-    async def run(self, ctx: EventContext) -> None:
+    async def run(self, ctx: EventContext) -> LightRoutine | None:
         active: list[tuple[Light, int | None]] = []
         for light in ctx.lights.values():
             state, error = await asyncio.to_thread(light.get_state)

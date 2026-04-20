@@ -3,6 +3,8 @@ from typing import ClassVar
 
 from home_assistant_lib import LightOffPayload, LightOnPayload
 
+from clyde.routines.types import LightRoutine
+
 from ..types import Event, EventContext
 
 
@@ -15,7 +17,7 @@ HOLD = 2.0
 class ColorWipe(Event):
     NAME: ClassVar[str] = "color_wipe"
 
-    async def run(self, ctx: EventContext) -> None:
+    async def run(self, ctx: EventContext) -> LightRoutine | None:
         on_payload = LightOnPayload(rgb_color=COLOR, brightness=BRIGHTNESS, transition=0.0)
         off_payload = LightOffPayload(transition=0.0)
         ordered = list(ctx.lights.values())

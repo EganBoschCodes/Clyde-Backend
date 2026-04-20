@@ -10,5 +10,4 @@ from .night_light import NightLight
 from .party import Party
 from .police import Police
 from .rainbow import Rainbow
-from .sunrise import Sunrise
 from .sunset import Sunset

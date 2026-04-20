@@ -1,20 +1,20 @@
 import clyde.utils as utils
 
 from clyde.events.types import Event
+from clyde.routines.types import LightRoutine
 
-from .manager import RoomRoutineManager
-from .types import LightRoutine
+from .room_manager import RoomManager
 
 
-class RoutineEngine:
+class Engine:
     def __init__(self, config: utils.ClydeConfig) -> None:
         self.config = config
-        self.managers: dict[str, RoomRoutineManager] = {}
+        self.managers: dict[str, RoomManager] = {}
         for room_key, room in config.rooms.items():
             room_lights = {k: config.lights[k] for k in room.lights}
-            self.managers[room_key] = RoomRoutineManager(room.name, room_lights)
+            self.managers[room_key] = RoomManager(room.name, room_lights)
 
-    def get(self, room: str) -> utils.Result[RoomRoutineManager]:
+    def get(self, room: str) -> utils.Result[RoomManager]:
         manager = self.managers.get(room)
         if manager is None:
             return utils.err(KeyError(f"Unknown room '{room}'"))
@@ -49,4 +49,4 @@ class RoutineEngine:
             await manager.stop()
 
 
-ENGINE = RoutineEngine(utils.CONFIG)
+ENGINE = Engine(utils.CONFIG)

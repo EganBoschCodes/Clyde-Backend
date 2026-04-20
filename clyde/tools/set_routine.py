@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
 from clyde.mcp_app import MCP
-from clyde.routines import ENGINE, ROUTINES
+from clyde.managers import ENGINE
+from clyde.routines import ROUTINES
 
 
 class SetRoutineResult(BaseModel):
