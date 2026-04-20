@@ -106,6 +106,20 @@ class RoomManager:
             return utils.err(error, f"turn_off {light.entity_id}")
         return utils.ok(None)
 
+    async def apply_off_all(self, transition: float = DEFAULT_OFF_TRANSITION_S) -> utils.Result[dict[str, str]]:
+        stop_err = await self.stop()
+        _, error = stop_err
+        if error:
+            return utils.err(error, f"stop routine before off in '{self.room_name}'")
+        payload = LightOffPayload(transition=transition)
+        keys = list(self.lights.keys())
+        results = await asyncio.gather(*(asyncio.to_thread(self.lights[k].off, payload) for k in keys))
+        failed: dict[str, str] = {}
+        for key, (_, error) in zip(keys, results):
+            if error:
+                failed[key] = str(error)
+        return utils.ok(failed)
+
     async def run_loop(self, routine: LightRoutine) -> None:
         light_keys = list(self.lights.keys())
         first = True
