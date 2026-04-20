@@ -5,6 +5,8 @@ description = "MCP server + web API frontend for the home Home Assistant instanc
 requires-python = ">=3.14"
 dependencies = [
     "home-assistant-lib",
+    "fastmcp>=2.0",
+    "uvicorn>=0.30",
 ]
 
 [tool.uv]
@@ -14,7 +16,7 @@ package = false
 home-assistant-lib = { path = "../Home-Assistant-Lib", editable = true }
 
 [tool.pyright]
-include = ["scripts"]
+include = ["clyde", "scripts"]
 pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
