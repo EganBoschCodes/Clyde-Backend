@@ -1,5 +1,7 @@
 import clyde.utils as utils
 
+from clyde.events.types import Event
+
 from .manager import RoomRoutineManager
 from .types import LightRoutine
 
@@ -35,6 +37,12 @@ class RoutineEngine:
         if error:
             return utils.err(error, f"stop routine in '{room}'")
         return await manager.stop()
+
+    async def fire_event(self, room: str, event: Event) -> utils.Result[None]:
+        manager, error = self.get(room)
+        if error:
+            return utils.err(error, f"fire event in '{room}'")
+        return await manager.fire_event(event)
 
     async def shutdown(self) -> None:
         for manager in self.managers.values():

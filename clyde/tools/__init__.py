@@ -1,5 +1,7 @@
+from .fire_event import fire_event
 from .light_off import light_off
 from .light_on import light_on
+from .list_events import list_events
 from .list_lights import list_lights
 from .list_rooms import list_rooms
 from .list_routines import list_routines

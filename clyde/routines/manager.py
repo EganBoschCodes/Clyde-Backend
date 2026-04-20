@@ -1,15 +1,18 @@
 import asyncio
 from datetime import datetime
 
-from home_assistant_lib import Light, LightOffPayload, LightOnPayload
+from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightState
 
 import clyde.utils as utils
+
+from clyde.events.types import Event, EventContext
 
 from .types import LightRoutine
 
 
 HANDOFF_TRANSITION_S = 2.0
 DEFAULT_OFF_TRANSITION_S = 1.0
+EVENT_RESTORE_TRANSITION_S = 0.3
 
 
 class RoomRoutineManager:
@@ -18,6 +21,7 @@ class RoomRoutineManager:
         self.lights = lights
         self.active: LightRoutine | None = None
         self.task: asyncio.Task[None] | None = None
+        self.event_lock = asyncio.Lock()
 
     def is_running(self) -> bool:
         return self.task is not None and not self.task.done()
@@ -32,6 +36,11 @@ class RoomRoutineManager:
         return utils.ok(None)
 
     async def stop(self) -> utils.Result[None]:
+        await self.cancel_task()
+        self.active = None
+        return utils.ok(None)
+
+    async def cancel_task(self) -> None:
         if self.task is not None:
             self.task.cancel()
             try:
@@ -39,8 +48,30 @@ class RoomRoutineManager:
             except asyncio.CancelledError:
                 pass
             self.task = None
-        self.active = None
-        return utils.ok(None)
+
+    async def fire_event(self, event: Event) -> utils.Result[None]:
+        async with self.event_lock:
+            prior_routine = self.active
+            prior_states: dict[str, LightState] = {}
+            if prior_routine is None:
+                for key, light in self.lights.items():
+                    state, error = await asyncio.to_thread(light.get_state)
+                    if error or state is None:
+                        continue
+                    prior_states[key] = state
+            await self.cancel_task()
+            try:
+                await event.run(EventContext(lights=self.lights))
+            except Exception as e:
+                return utils.err(e, f"event '{event.NAME}' in '{self.room_name}'")
+            finally:
+                if prior_routine is not None:
+                    self.active = prior_routine
+                    self.task = asyncio.create_task(self.run_loop(prior_routine))
+                else:
+                    for key, state in prior_states.items():
+                        await asyncio.to_thread(self.lights[key].restore, state, EVENT_RESTORE_TRANSITION_S)
+            return utils.ok(None)
 
     async def apply_on(self, light_key: str, payload: LightOnPayload) -> utils.Result[None]:
         stop_err = await self.stop()

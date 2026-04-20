@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from home_assistant_lib import LightOnPayload, hue_to_rgb
 
-from .types import LightRoutine
+from ..types import LightRoutine
 
 
 TICK_INTERVAL = 0.2

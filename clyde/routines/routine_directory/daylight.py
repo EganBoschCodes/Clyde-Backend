@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from home_assistant_lib import RGB, LightOnPayload
 
-from .types import LightRoutine
+from ..types import LightRoutine
 
 
 KEYFRAMES: tuple[tuple[time, RGB], ...] = (
