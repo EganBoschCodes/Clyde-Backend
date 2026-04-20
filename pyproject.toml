@@ -1,0 +1,21 @@
+[project]
+name = "clyde"
+version = "0.1.0"
+description = "MCP server + web API frontend for the home Home Assistant instance."
+requires-python = ">=3.14"
+dependencies = [
+    "home-assistant-lib",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+home-assistant-lib = { path = "../Home-Assistant-Lib", editable = true }
+
+[tool.pyright]
+include = ["scripts"]
+pythonVersion = "3.14"
+venvPath = "."
+venv = ".venv"
+reportMissingImports = true
