@@ -1,17 +1,30 @@
+from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from clyde.mcp_app import MCP
 from clyde.tools.set_routine import set_routine
 
+import clyde.utils as utils
+
+
+class SetRoutineRequest(BaseModel):
+    room: str
+    routine: str
+
+
+class SetRoutineResponse(BaseModel):
+    room: str
+    routine: str
+
+
+async def handle_set_routine(req: SetRoutineRequest) -> utils.Result[SetRoutineResponse]:
+    result = await set_routine(room=req.room, routine=req.routine)
+    if not result.ok:
+        return utils.err(ValueError(result.error or "failed to set routine"))
+    return utils.ok(SetRoutineResponse(room=req.room, routine=req.routine))
+
 
 @MCP.custom_route("/api/rooms/{room}/routine", methods=["POST"])
 async def set_routine_route(request: Request) -> JSONResponse:
-    room = request.path_params["room"]
-    body = await request.json()
-    routine = body.get("routine")
-    if not isinstance(routine, str):
-        return JSONResponse({"ok": False, "error": "body must contain 'routine' (string)"}, status_code=400)
-    result = await set_routine(room=room, routine=routine)
-    status = 200 if result.ok else 400
-    return JSONResponse(result.model_dump(), status_code=status)
+    return await utils.handle_api(request, SetRoutineRequest, handle_set_routine)

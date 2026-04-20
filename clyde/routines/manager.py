@@ -80,7 +80,7 @@ class RoomRoutineManager:
                 if light is None:
                     continue
                 outgoing = payload
-                if first and payload.transition is None:
+                if first:
                     outgoing = payload.model_copy(update={"transition": HANDOFF_TRANSITION_S})
                 await asyncio.to_thread(light.on, outgoing)
             first = False

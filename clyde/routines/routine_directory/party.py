@@ -7,7 +7,7 @@ from home_assistant_lib import LightOnPayload, hue_to_rgb
 from .types import LightRoutine
 
 
-TICK_INTERVAL = 1.0
+TICK_INTERVAL = 0.4
 BRIGHTNESS = 255
 
 
@@ -22,5 +22,5 @@ class Party(LightRoutine):
         frame: dict[str, LightOnPayload] = {}
         for key in lights:
             rgb = hue_to_rgb(self.rng.random())
-            frame[key] = LightOnPayload(rgb_color=rgb, brightness=BRIGHTNESS, transition=TICK_INTERVAL)
+            frame[key] = LightOnPayload(rgb_color=rgb, brightness=BRIGHTNESS, transition=0)
         return frame
