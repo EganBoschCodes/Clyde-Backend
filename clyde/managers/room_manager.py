@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 
-from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightState
+from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightState, turn_off_many, turn_on_many
 
 import clyde.utils as utils
 
@@ -112,20 +112,22 @@ class RoomManager:
         if error:
             return utils.err(error, f"stop routine before off in '{self.room_name}'")
         payload = LightOffPayload(transition=transition)
-        keys = list(self.lights.keys())
-        results = await asyncio.gather(*(asyncio.to_thread(self.lights[k].off, payload) for k in keys))
-        failed: dict[str, str] = {}
-        for key, (_, error) in zip(keys, results):
-            if error:
-                failed[key] = str(error)
-        return utils.ok(failed)
+        entity_ids = [light.entity_id for light in self.lights.values()]
+        _, error = await asyncio.to_thread(turn_off_many, entity_ids, payload)
+        if error:
+            failed = {key: str(error) for key in self.lights.keys()}
+            return utils.ok(failed)
+        return utils.ok({})
 
     async def run_loop(self, routine: LightRoutine) -> None:
         light_keys = list(self.lights.keys())
+        loop = asyncio.get_running_loop()
+        next_tick = loop.time()
         first = True
         while True:
             now = datetime.now()
             frame = await routine.step(now, light_keys)
+            groups: dict[str, tuple[LightOnPayload, list[str]]] = {}
             for key, payload in frame.items():
                 light = self.lights.get(key)
                 if light is None:
@@ -133,6 +135,17 @@ class RoomManager:
                 outgoing = payload
                 if first:
                     outgoing = payload.model_copy(update={"transition": HANDOFF_TRANSITION_S})
-                await asyncio.to_thread(light.on, outgoing)
+                group_key = outgoing.model_dump_json()
+                existing = groups.get(group_key)
+                if existing is None:
+                    groups[group_key] = (outgoing, [light.entity_id])
+                    continue
+                existing[1].append(light.entity_id)
+            await asyncio.gather(*(asyncio.to_thread(turn_on_many, entity_ids, grouped_payload) for grouped_payload, entity_ids in groups.values()))
             first = False
-            await asyncio.sleep(routine.tick_interval)
+            next_tick += routine.tick_interval
+            sleep_for = next_tick - loop.time()
+            if sleep_for > 0:
+                await asyncio.sleep(sleep_for)
+                continue
+            next_tick = loop.time()
