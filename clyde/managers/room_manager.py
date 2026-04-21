@@ -21,9 +21,22 @@ class RoomManager:
         self.active: LightRoutine | None = None
         self.task: asyncio.Task[None] | None = None
         self.event_lock = asyncio.Lock()
+        self.dim_factor: float = 1.0
 
     def is_running(self) -> bool:
         return self.task is not None and not self.task.done()
+
+    def set_dim_factor(self, factor: float) -> utils.Result[float]:
+        if factor < 0.0 or factor > 1.0:
+            return utils.err(ValueError(f"dim factor must be in [0.0, 1.0], got {factor}"))
+        self.dim_factor = factor
+        return utils.ok(factor)
+
+    def scale_payload(self, payload: LightOnPayload) -> LightOnPayload:
+        if payload.brightness is None or self.dim_factor == 1.0:
+            return payload
+        scaled = max(0, min(255, round(payload.brightness * self.dim_factor)))
+        return payload.model_copy(update={"brightness": scaled})
 
     async def start(self, routine: LightRoutine) -> utils.Result[None]:
         stop_err = await self.stop()
@@ -87,7 +100,7 @@ class RoomManager:
         light = self.lights.get(light_key)
         if light is None:
             return utils.err(KeyError(f"Light '{light_key}' not in room '{self.room_name}'"))
-        _, error = await asyncio.to_thread(light.on, payload)
+        _, error = await asyncio.to_thread(light.on, self.scale_payload(payload))
         if error:
             return utils.err(error, f"turn_on {light.entity_id}")
         return utils.ok(None)
@@ -132,9 +145,9 @@ class RoomManager:
                 light = self.lights.get(key)
                 if light is None:
                     continue
-                outgoing = payload
+                outgoing = self.scale_payload(payload)
                 if first:
-                    outgoing = payload.model_copy(update={"transition": HANDOFF_TRANSITION_S})
+                    outgoing = outgoing.model_copy(update={"transition": HANDOFF_TRANSITION_S})
                 group_key = outgoing.model_dump_json()
                 existing = groups.get(group_key)
                 if existing is None:

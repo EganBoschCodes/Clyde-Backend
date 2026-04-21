@@ -9,5 +9,6 @@ from .list_routines import list_routines
 from .list_schedules import list_schedules
 from .remove_schedule import remove_schedule
 from .room_off import room_off
+from .set_dim import set_dim
 from .set_routine import set_routine
 from .stop_routine import stop_routine

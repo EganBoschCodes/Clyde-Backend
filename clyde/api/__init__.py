@@ -1,13 +1,2 @@
-from .add_schedule import add_schedule_route
-from .fire_event import fire_event_route
-from .list_events import list_events_route
-from .list_lights import list_lights_route
-from .list_rooms import list_rooms_route
-from .list_routines import list_routines_route
-from .list_schedules import list_schedules_route
-from .mini_party import mini_party_route
-from .remove_schedule import remove_schedule_route
-from .room_off import room_off_route
-from .set_routine import set_routine_route
+from . import events, friends, lights, rooms, routines, schedules
 from .status import status_route
-from .stop_routine import stop_routine_route
