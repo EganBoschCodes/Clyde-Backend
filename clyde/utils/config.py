@@ -43,8 +43,8 @@ CONFIG = ClydeConfig(
         "kitchen_and_living_room": Room(
             name="Kitchen/Living Room",
             lights=(
-                "kitchen_island_1",
                 "kitchen_island_2",
+                "kitchen_island_1",
                 "living_room_lamp_1",
                 "living_room_lamp_2",
             ),

@@ -5,6 +5,7 @@ from .daylight import Daylight
 from .fire import Fire
 from .focus import Focus
 from .lightning import Lightning
+from .love import Love
 from .movie import Movie
 from .night_light import NightLight
 from .ocean import Ocean
