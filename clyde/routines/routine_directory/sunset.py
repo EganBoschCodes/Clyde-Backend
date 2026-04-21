@@ -1,3 +1,5 @@
+import math
+import random
 from datetime import datetime
 from typing import ClassVar
 
@@ -6,20 +8,52 @@ from home_assistant_lib import RGB, LightOnPayload
 from ..types import LightRoutine
 
 
-TICK_INTERVAL = 5.0
-STEPS = 120
-START_RGB: RGB = (255, 244, 229)
-END_RGB: RGB = (255, 140, 40)
-START_BRIGHTNESS = 255
-END_BRIGHTNESS = 3
+TICK_INTERVAL = 0.25
+# Ordered along the sunset spectrum so neighbor-drift reads as a gradient wander.
+PALETTE: tuple[RGB, ...] = (
+    (255, 180, 80),
+    (255, 120, 40),
+    (255, 90, 60),
+    (255, 100, 140),
+    (255, 150, 170),
+    (230, 70, 90),
+    (220, 50, 120),
+    (200, 60, 160),
+    (170, 70, 200),
+    (130, 50, 190),
+    (60, 20, 80),
+)
+NEIGHBOR_RADIUS = 3
+TRANSITION_MIN_S = 4.0
+TRANSITION_MAX_S = 8.0
+BRIGHTNESS_MIN = 80
+BRIGHTNESS_MAX = 255
+BREATHE_PERIOD_S = 30.0
+BREATHE_DEPTH = 0.25
+HOLD_CHANCE = 0.05
+HOLD_MIN_S = 8.0
+HOLD_MAX_S = 12.0
+HOLD_ANCHORS: tuple[RGB, ...] = (
+    (130, 50, 190),
+    (200, 60, 160),
+    (60, 20, 80),
+)
 
 
-def lerp(a: int, b: int, t: float) -> int:
-    return int(a + (b - a) * t)
+def pick_neighbor(rng: random.Random, prior: RGB | None) -> RGB:
+    if prior is None or prior not in PALETTE:
+        return rng.choice(PALETTE)
+    idx = PALETTE.index(prior)
+    lo = max(0, idx - NEIGHBOR_RADIUS)
+    hi = min(len(PALETTE), idx + NEIGHBOR_RADIUS + 1)
+    choices = tuple(c for i, c in enumerate(PALETTE[lo:hi], start=lo) if i != idx)
+    return rng.choice(choices)
 
 
-def lerp_rgb(a: RGB, b: RGB, t: float) -> RGB:
-    return (lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t))
+def breathed(brightness: int, elapsed: float, phase: float) -> int:
+    wave = math.sin(2 * math.pi * (elapsed / BREATHE_PERIOD_S + phase))
+    adjusted = brightness * (1.0 + BREATHE_DEPTH * wave)
+    return max(1, min(255, int(adjusted)))
 
 
 class Sunset(LightRoutine):
@@ -27,12 +61,51 @@ class Sunset(LightRoutine):
     tick_interval: ClassVar[float] = TICK_INTERVAL
 
     def __init__(self) -> None:
-        self.tick = 0
+        self.rng = random.Random()
+        self.next_swap: dict[str, float] = {}
+        self.last_color: dict[str, RGB] = {}
+        self.breathe_phase: dict[str, float] = {}
+        self.elapsed = 0.0
 
     async def step(self, now: datetime, lights: list[str]) -> dict[str, LightOnPayload]:
-        t = min(self.tick / STEPS, 1.0)
-        rgb = lerp_rgb(START_RGB, END_RGB, t)
-        brightness = lerp(START_BRIGHTNESS, END_BRIGHTNESS, t)
-        payload = LightOnPayload(rgb_color=rgb, brightness=brightness, transition=TICK_INTERVAL)
-        self.tick += 1
-        return {light: payload for light in lights}
+        frame: dict[str, LightOnPayload] = {}
+        for key in lights:
+            due = self.next_swap.get(key)
+            if due is not None and self.elapsed < due:
+                continue
+
+            if key not in self.breathe_phase:
+                self.breathe_phase[key] = self.rng.random()
+            phase = self.breathe_phase[key]
+
+            # Occasional hold: park the light on a deep anchor for a beat.
+            if due is not None and self.rng.random() < HOLD_CHANCE:
+                color = self.rng.choice(HOLD_ANCHORS)
+                hold = self.rng.uniform(HOLD_MIN_S, HOLD_MAX_S)
+                brightness = breathed(
+                    self.rng.randint(BRIGHTNESS_MIN, BRIGHTNESS_MAX), self.elapsed, phase
+                )
+                self.last_color[key] = color
+                self.next_swap[key] = self.elapsed + hold
+                frame[key] = LightOnPayload(
+                    rgb_color=color, brightness=brightness, transition=TRANSITION_MAX_S
+                )
+                continue
+
+            color = pick_neighbor(self.rng, self.last_color.get(key))
+            transition = self.rng.uniform(TRANSITION_MIN_S, TRANSITION_MAX_S)
+            brightness = breathed(
+                self.rng.randint(BRIGHTNESS_MIN, BRIGHTNESS_MAX), self.elapsed, phase
+            )
+
+            self.last_color[key] = color
+            start_offset = self.rng.uniform(0.0, TRANSITION_MAX_S) if due is None else 0.0
+            self.next_swap[key] = self.elapsed + start_offset + transition
+
+            if start_offset > 0.0:
+                continue
+
+            frame[key] = LightOnPayload(rgb_color=color, brightness=brightness, transition=transition)
+
+        self.elapsed += TICK_INTERVAL
+        return frame

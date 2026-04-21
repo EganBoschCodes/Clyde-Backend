@@ -9,7 +9,7 @@ from clyde.routines.types import LightRoutine
 from ..types import Event, EventContext
 
 
-STEPS = 10
+STEPS = 120
 TICK_INTERVAL = 5.0
 START_RGB: RGB = (255, 140, 40)
 END_RGB: RGB = (200, 220, 255)
@@ -25,8 +25,8 @@ def lerp_rgb(a: RGB, b: RGB, t: float) -> RGB:
     return (lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t))
 
 
-class Sunrise(Event):
-    NAME: ClassVar[str] = "sunrise"
+class Alarm(Event):
+    NAME: ClassVar[str] = "alarm"
 
     async def run(self, ctx: EventContext) -> LightRoutine | None:
         for tick in range(STEPS + 1):

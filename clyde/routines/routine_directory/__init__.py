@@ -7,6 +7,7 @@ from .focus import Focus
 from .lightning import Lightning
 from .movie import Movie
 from .night_light import NightLight
+from .ocean import Ocean
 from .party import Party
 from .police import Police
 from .rainbow import Rainbow

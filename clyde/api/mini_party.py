@@ -19,6 +19,7 @@ COOLDOWN_S = 5 * 60.0
 ABUSE_WINDOW_S = 60.0
 ABUSE_THRESHOLD = 3
 LOCKOUT_S = 4 * 60 * 60.0
+EXCLUDED_ROOMS = {"bedroom"}
 
 
 class MiniPartyRequest(BaseModel):
@@ -63,7 +64,7 @@ def check_and_record(ip: str, now: float) -> float:
 
 async def handle_mini_party(req: MiniPartyRequest) -> utils.Result[MiniPartyResponse]:
     del req
-    rooms = list(ENGINE.managers.keys())
+    rooms = [r for r in ENGINE.managers.keys() if r not in EXCLUDED_ROOMS]
     results = await asyncio.gather(*(ENGINE.fire_event(room, MiniParty()) for room in rooms))
     fired: list[str] = []
     failed: dict[str, str] = {}
