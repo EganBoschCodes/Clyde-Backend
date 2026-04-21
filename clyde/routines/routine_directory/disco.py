@@ -7,24 +7,21 @@ from home_assistant_lib import RGB, LightOnPayload
 from ..types import LightRoutine
 
 
-TICK_INTERVAL = 0.25
+TICK_INTERVAL = 0.1
+TRANSITION = 0.3
+SWAP_MIN_S = 0.7
+SWAP_MAX_S = 1.3
 PALETTE: tuple[RGB, ...] = (
-    (20, 110, 70),
-    (40, 140, 90),
-    (30, 150, 120),
-    (20, 170, 160),
-    (30, 180, 200),
-    (20, 130, 190),
-    (25, 90, 180),
-    (15, 55, 150),
-    (10, 35, 120),
+    (255, 140, 0),
+    (135, 206, 250),
+    (255, 105, 180),
+    (160, 32, 240),
+    (255, 255, 255),
 )
-TRANSITION_MIN_S = 2.0
-TRANSITION_MAX_S = 4.0
 
 
-class Ocean(LightRoutine):
-    NAME: ClassVar[str] = "ocean"
+class Disco(LightRoutine):
+    NAME: ClassVar[str] = "disco"
     tick_interval: ClassVar[float] = TICK_INTERVAL
 
     def __init__(self) -> None:
@@ -43,14 +40,14 @@ class Ocean(LightRoutine):
             prior = self.last_color.get(key)
             choices = tuple(c for c in PALETTE if c != prior) if prior is not None else PALETTE
             color = self.rng.choice(choices)
-            transition = self.rng.uniform(TRANSITION_MIN_S, TRANSITION_MAX_S)
+            hold = self.rng.uniform(SWAP_MIN_S, SWAP_MAX_S)
 
             self.last_color[key] = color
-            # Stagger when each light's *next* swap happens so they don't re-sync after a full cycle.
-            start_offset = self.rng.uniform(0.0, TRANSITION_MAX_S) if due is None else 0.0
-            self.next_swap[key] = self.elapsed + start_offset + transition
+            # Stagger first-tick swaps so lights drift out of sync.
+            start_offset = self.rng.uniform(0.0, SWAP_MAX_S) if due is None else 0.0
+            self.next_swap[key] = self.elapsed + start_offset + hold
 
-            frame[key] = LightOnPayload(rgb_color=color, brightness=255, transition=transition)
+            frame[key] = LightOnPayload(rgb_color=color, brightness=255, transition=TRANSITION)
 
         self.elapsed += TICK_INTERVAL
         return frame

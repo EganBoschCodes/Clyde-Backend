@@ -9,9 +9,9 @@ from ..types import LightRoutine
 
 TICK_INTERVAL = 0.4
 BASE: RGB = (255, 147, 41)
-JITTER = 15
-BRIGHTNESS_MIN = 120
-BRIGHTNESS_MAX = 200
+JITTER = 6
+BRIGHTNESS_MIN = 179
+BRIGHTNESS_MAX = 255
 
 
 def clamp(v: int) -> int:

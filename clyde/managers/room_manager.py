@@ -12,6 +12,7 @@ from clyde.routines.types import LightRoutine
 HANDOFF_TRANSITION_S = 2.0
 DEFAULT_OFF_TRANSITION_S = 1.0
 EVENT_RESTORE_TRANSITION_S = 0.3
+DIM_SNAP_TRANSITION_S = 0.5
 
 
 class RoomManager:
@@ -22,6 +23,8 @@ class RoomManager:
         self.task: asyncio.Task[None] | None = None
         self.event_lock = asyncio.Lock()
         self.dim_factor: float = 1.0
+        self.wake = asyncio.Event()
+        self.last_payloads: dict[str, LightOnPayload] = {}
 
     def is_running(self) -> bool:
         return self.task is not None and not self.task.done()
@@ -29,7 +32,10 @@ class RoomManager:
     def set_dim_factor(self, factor: float) -> utils.Result[float]:
         if factor < 0.0 or factor > 1.0:
             return utils.err(ValueError(f"dim factor must be in [0.0, 1.0], got {factor}"))
+        changed = factor != self.dim_factor
         self.dim_factor = factor
+        if changed:
+            self.wake.set()
         return utils.ok(factor)
 
     def scale_payload(self, payload: LightOnPayload) -> LightOnPayload:
@@ -44,6 +50,7 @@ class RoomManager:
         if error:
             return utils.err(error, f"stop previous routine in '{self.room_name}'")
         self.active = routine
+        self.last_payloads = {}
         self.task = asyncio.create_task(self.run_loop(routine))
         return utils.ok(None)
 
@@ -137,9 +144,21 @@ class RoomManager:
         loop = asyncio.get_running_loop()
         next_tick = loop.time()
         first = True
+        snap = False
+        self.wake.clear()
         while True:
-            now = datetime.now()
-            frame = await routine.step(now, light_keys)
+            if snap:
+                frame: dict[str, LightOnPayload] = {}
+                for key in light_keys:
+                    prior = self.last_payloads.get(key)
+                    if prior is None or prior.brightness is None:
+                        continue
+                    frame[key] = LightOnPayload(brightness=prior.brightness, transition=DIM_SNAP_TRANSITION_S)
+            else:
+                now = datetime.now()
+                frame = await routine.step(now, light_keys)
+                for key, payload in frame.items():
+                    self.last_payloads[key] = payload
             groups: dict[str, tuple[LightOnPayload, list[str]]] = {}
             for key, payload in frame.items():
                 light = self.lights.get(key)
@@ -156,9 +175,16 @@ class RoomManager:
                 existing[1].append(light.entity_id)
             await asyncio.gather(*(asyncio.to_thread(turn_on_many, entity_ids, grouped_payload) for grouped_payload, entity_ids in groups.values()))
             first = False
+            snap = False
             next_tick += routine.tick_interval
             sleep_for = next_tick - loop.time()
             if sleep_for > 0:
-                await asyncio.sleep(sleep_for)
+                try:
+                    await asyncio.wait_for(self.wake.wait(), timeout=sleep_for)
+                    self.wake.clear()
+                    next_tick = loop.time()
+                    snap = True
+                except TimeoutError:
+                    pass
                 continue
             next_tick = loop.time()
