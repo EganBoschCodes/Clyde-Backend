@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-cd "$(dirname "$0")"
-
-HOST="${CLYDE_HOST:-0.0.0.0}"
-PORT="${CLYDE_PORT:-8765}"
-
-exec uv run uvicorn clyde.server:app --host "$HOST" --port "$PORT"
