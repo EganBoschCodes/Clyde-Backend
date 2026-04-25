@@ -4,9 +4,15 @@ from .light_off import light_off
 from .light_on import light_on
 from .list_events import list_events
 from .list_lights import list_lights
+from .list_media_players import list_media_players
 from .list_rooms import list_rooms
 from .list_routines import list_routines
 from .list_schedules import list_schedules
+from .media_player_play_media import media_player_play_media
+from .media_player_select_source import media_player_select_source
+from .media_player_state import media_player_state
+from .media_player_transport import media_player_transport
+from .media_player_volume import media_player_volume
 from .remove_schedule import remove_schedule
 from .room_off import room_off
 from .set_dim import set_dim

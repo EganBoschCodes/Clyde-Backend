@@ -1,0 +1,6 @@
+from .list_media_players import list_media_players_route
+from .media_player_play_media import media_player_play_media_route
+from .media_player_select_source import media_player_select_source_route
+from .media_player_state import media_player_state_route
+from .media_player_transport import media_player_transport_route
+from .media_player_volume import media_player_volume_route

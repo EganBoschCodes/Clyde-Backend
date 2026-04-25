@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from home_assistant_lib import Light
+from home_assistant_lib import Light, MediaPlayer
 
 
 class Room(BaseModel):
@@ -14,6 +14,7 @@ class ClydeConfig(BaseModel):
 
     lights: dict[str, Light]
     rooms: dict[str, Room]
+    media_players: dict[str, MediaPlayer] = {}
 
     @model_validator(mode="after")
     def validate_room_lights(self) -> "ClydeConfig":
@@ -53,5 +54,8 @@ CONFIG = ClydeConfig(
             name="Master Bedroom",
             lights=("mackenzie_bedside_lamp", "egan_bedside_lamp"),
         ),
+    },
+    media_players={
+        "fire_tv": MediaPlayer(entity_id="media_player.fire_tv", adb_address="192.168.1.211:5555"),
     },
 )
