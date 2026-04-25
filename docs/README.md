@@ -84,6 +84,7 @@ A `config.json` at the repo root defines `lights`, `rooms`, and
 |----------|-------------|
 | [routines.md](./routines.md) | Authoring long-running per-room light behaviors |
 | [events.md](./events.md) | Authoring transient, preempting light behaviors |
+| [media_players.md](./media_players.md) | Fire TV (ADB) integration + keepalive timer |
 | [changelogs/](./changelogs/) | Version history and release notes |
 
 ---

@@ -83,3 +83,20 @@ directly.
   features on top.
 - Ask before destructive actions on the Pi (restarting HA, editing
   automations.yaml live, etc.).
+
+## Documentation is public
+
+Anything under `docs/`, `README.md`, or any other file in this repo is
+public (the repo is open). Do **not** put information in docs that could
+be used against the deployment:
+
+- No internal IPs, MAC addresses, hostnames, or device serials.
+- No tokens, secrets, OAuth client IDs/secrets, or allowlisted emails.
+- No exact filesystem paths that reveal user/host layout beyond what's
+  already implied by the repo structure.
+- No "open port X is exposed on the LAN" specifics — describe the role,
+  not the attack surface.
+
+When documenting infrastructure, prefer placeholders (`<fire-tv-ip>`,
+`<deploy-user>`) and point at the source of truth (config files,
+`.env`, HA's own config entries) rather than copying values.
