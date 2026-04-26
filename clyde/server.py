@@ -8,7 +8,8 @@ from clyde.auth import AuthMiddleware
 from clyde.managers import ENGINE
 from clyde.mcp_app import MCP
 from clyde.realtime import ws_endpoint
-from clyde.scheduler import SCHEDULER
+from clyde.scheduler.scheduler import SCHEDULER
+from clyde.state import STATE
 import clyde.api  # noqa: F401 — registers HTTP routes
 import clyde.auth  # noqa: F401 — registers OAuth routes
 import clyde.tools  # noqa: F401 — registers MCP tools
@@ -25,6 +26,10 @@ _inner_lifespan = app.router.lifespan_context
 
 @asynccontextmanager
 async def lifespan(scope: Starlette) -> AsyncIterator[None]:
+    _, error = STATE.load()
+    if error:
+        print(f"[state] failed to load: {error}")
+    await ENGINE.restore()
     _, error = await SCHEDULER.start()
     if error:
         print(f"[scheduler] failed to start: {error}")

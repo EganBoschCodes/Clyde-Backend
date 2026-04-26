@@ -8,6 +8,7 @@ import clyde.utils as utils
 from clyde.events.types import Event, EventContext
 from clyde.realtime import BUS, LightOnEvent, RoomDimEvent, RoomStateEvent
 from clyde.routines.types import LightRoutine
+from clyde.state import STATE
 
 
 HANDOFF_TRANSITION_S = 2.0
@@ -37,9 +38,18 @@ class RoomManager:
         changed = factor != self.dim_factor
         self.dim_factor = factor
         if changed:
+            _, error = STATE.set_room_dim(self.room_key, factor)
+            if error:
+                print(f"[room_manager] persist dim in '{self.room_key}' failed: {error}")
             self.wake.set()
             BUS.publish(RoomDimEvent(room=self.room_key, factor=factor))
         return utils.ok(factor)
+
+    def persist_active(self) -> None:
+        name = self.active.NAME if self.active is not None else None
+        _, error = STATE.set_room_routine(self.room_key, name)
+        if error:
+            print(f"[room_manager] persist active in '{self.room_key}' failed: {error}")
 
     def scale_payload(self, payload: LightOnPayload) -> LightOnPayload:
         if payload.brightness is None or self.dim_factor == 1.0:
@@ -61,12 +71,19 @@ class RoomManager:
         self.active = routine
         self.last_payloads = {}
         self.task = asyncio.create_task(self.run_loop(routine))
+        self.persist_active()
         BUS.publish(RoomStateEvent(room=self.room_key, active_routine=routine.NAME))
         return utils.ok(None)
 
     async def cancel_active(self) -> None:
         await self.cancel_task()
+        had_active = self.active is not None
         self.active = None
+        if had_active:
+            self.persist_active()
+
+    async def halt(self) -> None:
+        await self.cancel_task()
 
     async def stop(self) -> utils.Result[None]:
         had_active = self.active is not None
@@ -103,6 +120,7 @@ class RoomManager:
             if follow_up is not None:
                 self.active = follow_up
                 self.task = asyncio.create_task(self.run_loop(follow_up))
+                self.persist_active()
             else:
                 await self.restore_after_event(prior_routine, prior_states)
             return utils.ok(None)

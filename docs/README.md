@@ -70,7 +70,8 @@ A `config.json` at the repo root defines `lights`, `rooms`, and
 | `clyde/managers/` | `Engine` singleton + per-room dispatch for routines and events |
 | `clyde/routines/` | Long-running per-room light behaviors (`LightRoutine` subclasses) |
 | `clyde/events/` | Transient per-room behaviors that preempt routines (`Event` subclasses) |
-| `clyde/scheduler/` | Cron-like persisted schedules backed by `schedules.json` |
+| `clyde/scheduler/` | Cron-like schedules, persisted via the state store |
+| `clyde/state/` | `state.json` persistence: schedules, active routine per room, dim factor per room |
 | `clyde/utils/` | Config loading, HTTP client helpers, `Result` type |
 
 `clyde/server.py` mounts the FastMCP app at `/mcp`, wraps it with

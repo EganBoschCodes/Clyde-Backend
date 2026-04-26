@@ -1,7 +1,9 @@
 import clyde.utils as utils
 
 from clyde.events.types import Event
+from clyde.routines import ROUTINES
 from clyde.routines.types import LightRoutine
+from clyde.state import STATE
 
 from .room_manager import RoomManager
 
@@ -50,9 +52,26 @@ class Engine:
             return utils.err(error, f"fire event in '{room}'")
         return await manager.fire_event(event)
 
+    async def restore(self) -> None:
+        for room_key, room_state in STATE.rooms().items():
+            manager = self.managers.get(room_key)
+            if manager is None:
+                continue
+            if room_state.dim_factor != 1.0:
+                manager.set_dim_factor(room_state.dim_factor)
+            if room_state.active_routine is None:
+                continue
+            klass = ROUTINES.get(room_state.active_routine)
+            if klass is None:
+                print(f"[engine] unknown routine '{room_state.active_routine}' for room '{room_key}', skipping restore")
+                continue
+            _, error = await manager.start(klass())
+            if error:
+                print(f"[engine] restore '{room_state.active_routine}' in '{room_key}' failed: {error}")
+
     async def shutdown(self) -> None:
         for manager in self.managers.values():
-            await manager.stop()
+            await manager.halt()
 
 
 ENGINE = Engine(utils.CONFIG)

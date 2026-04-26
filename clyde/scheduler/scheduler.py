@@ -5,8 +5,8 @@ import clyde.utils as utils
 
 from clyde.events import EVENTS
 from clyde.managers import ENGINE
+from clyde.state import STATE
 
-from .store import load_schedules, save_schedules
 from .types import ScheduledEvent
 
 
@@ -26,10 +26,7 @@ class Scheduler:
     async def start(self) -> utils.Result[None]:
         if self.is_running():
             return utils.ok(None)
-        schedules, error = load_schedules()
-        if error:
-            return utils.err(error, "load schedules")
-        self.schedules = schedules
+        self.schedules = STATE.schedules()
         now = datetime.now()
         for sched in self.schedules:
             if not sched.runs_on(now.weekday()):
@@ -61,7 +58,7 @@ class Scheduler:
             if any(s.key() == sched.key() for s in self.schedules):
                 return utils.err(ValueError(f"Schedule already exists for {sched.key()}"))
             next_schedules = [*self.schedules, sched]
-            _, error = save_schedules(next_schedules)
+            _, error = STATE.set_schedules(next_schedules)
             if error:
                 return utils.err(error, "persist schedules")
             self.schedules = next_schedules
@@ -76,7 +73,7 @@ class Scheduler:
             if match is None:
                 return utils.err(KeyError(f"No schedule for {sched_key}"))
             next_schedules = [s for s in self.schedules if s.key() != sched_key]
-            _, error = save_schedules(next_schedules)
+            _, error = STATE.set_schedules(next_schedules)
             if error:
                 return utils.err(error, "persist schedules")
             self.schedules = next_schedules

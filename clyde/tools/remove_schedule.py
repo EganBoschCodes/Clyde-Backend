@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
 from clyde.mcp_app import MCP
-from clyde.scheduler import SCHEDULER, ScheduledEvent
+from clyde.scheduler import ScheduledEvent
+from clyde.scheduler.scheduler import SCHEDULER
 
 
 class RemoveScheduleResult(BaseModel):
