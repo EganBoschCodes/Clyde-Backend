@@ -6,7 +6,7 @@ from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightStat
 import clyde.utils as utils
 
 from clyde.events.types import Event, EventContext
-from clyde.realtime import BUS, RoomDimEvent, RoomStateEvent
+from clyde.realtime import BUS, LightOnEvent, RoomDimEvent, RoomStateEvent
 from clyde.routines.types import LightRoutine
 
 
@@ -46,6 +46,15 @@ class RoomManager:
             return payload
         scaled = max(0, min(255, round(payload.brightness * self.dim_factor)))
         return payload.model_copy(update={"brightness": scaled})
+
+    def publish_light_on(self, light_key: str, payload: LightOnPayload) -> None:
+        BUS.publish(LightOnEvent(
+            room=self.room_key,
+            light=light_key,
+            rgb_color=payload.rgb_color,
+            brightness=payload.brightness,
+            transition=payload.transition,
+        ))
 
     async def start(self, routine: LightRoutine) -> utils.Result[None]:
         await self.cancel_active()
@@ -87,7 +96,7 @@ class RoomManager:
                     prior_states[key] = state
             await self.cancel_task()
             try:
-                follow_up = await event.run(EventContext(lights=self.lights))
+                follow_up = await event.run(EventContext(room_key=self.room_key, lights=self.lights))
             except Exception as e:
                 await self.restore_after_event(prior_routine, prior_states)
                 return utils.err(e, f"event '{event.NAME}' in '{self.room_name}'")
@@ -111,9 +120,11 @@ class RoomManager:
         light = self.lights.get(light_key)
         if light is None:
             return utils.err(KeyError(f"Light '{light_key}' not in room '{self.room_name}'"))
-        _, error = await asyncio.to_thread(light.on, self.scale_payload(payload))
+        outgoing = self.scale_payload(payload)
+        _, error = await asyncio.to_thread(light.on, outgoing)
         if error:
             return utils.err(error, f"turn_on {light.entity_id}")
+        self.publish_light_on(light_key, outgoing)
         return utils.ok(None)
 
     async def apply_off(self, light_key: str, transition: float = DEFAULT_OFF_TRANSITION_S) -> utils.Result[None]:
@@ -159,6 +170,7 @@ class RoomManager:
                 for key, payload in frame.items():
                     self.last_payloads[key] = payload
             groups: dict[str, tuple[LightOnPayload, list[str]]] = {}
+            emitted: list[tuple[str, LightOnPayload]] = []
             for key, payload in frame.items():
                 light = self.lights.get(key)
                 if light is None:
@@ -166,6 +178,7 @@ class RoomManager:
                 outgoing = self.scale_payload(payload)
                 if first:
                     outgoing = outgoing.model_copy(update={"transition": HANDOFF_TRANSITION_S})
+                emitted.append((key, outgoing))
                 group_key = outgoing.model_dump_json()
                 existing = groups.get(group_key)
                 if existing is None:
@@ -173,6 +186,8 @@ class RoomManager:
                     continue
                 existing[1].append(light.entity_id)
             await asyncio.gather(*(asyncio.to_thread(turn_on_many, entity_ids, grouped_payload) for grouped_payload, entity_ids in groups.values()))
+            for key, outgoing in emitted:
+                self.publish_light_on(key, outgoing)
             first = False
             snap = False
             next_tick += routine.tick_interval

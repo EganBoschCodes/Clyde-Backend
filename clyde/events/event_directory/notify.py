@@ -22,8 +22,8 @@ class Notify(Event):
         on_payload = LightOnPayload(rgb_color=COLOR, brightness=BRIGHTNESS, transition=0.0)
         off_payload = LightOffPayload(transition=0.0)
         for _ in range(FLASHES):
-            for light in ctx.lights.values():
-                await asyncio.to_thread(light.on, on_payload)
+            for key in ctx.lights.keys():
+                await ctx.turn_on(key, on_payload)
             await asyncio.sleep(ON_DURATION)
             for light in ctx.lights.values():
                 await asyncio.to_thread(light.off, off_payload)

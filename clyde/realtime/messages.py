@@ -15,4 +15,13 @@ class RoomDimEvent(BaseModel):
     factor: float
 
 
-type RealtimeEvent = RoomStateEvent | RoomDimEvent
+class LightOnEvent(BaseModel):
+    type: Literal["light_on"] = "light_on"
+    room: str
+    light: str
+    rgb_color: tuple[int, int, int] | None
+    brightness: int | None
+    transition: float | None
+
+
+type RealtimeEvent = RoomStateEvent | RoomDimEvent | LightOnEvent

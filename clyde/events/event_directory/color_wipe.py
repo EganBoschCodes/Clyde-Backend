@@ -20,11 +20,11 @@ class ColorWipe(Event):
     async def run(self, ctx: EventContext) -> LightRoutine | None:
         on_payload = LightOnPayload(rgb_color=COLOR, brightness=BRIGHTNESS, transition=0.0)
         off_payload = LightOffPayload(transition=0.0)
-        ordered = list(ctx.lights.values())
-        for light in ordered:
-            await asyncio.to_thread(light.on, on_payload)
+        ordered = list(ctx.lights.items())
+        for key, _ in ordered:
+            await ctx.turn_on(key, on_payload)
             await asyncio.sleep(STAGGER)
         await asyncio.sleep(HOLD)
-        for light in ordered:
+        for _, light in ordered:
             await asyncio.to_thread(light.off, off_payload)
             await asyncio.sleep(STAGGER)

@@ -34,7 +34,7 @@ class Alarm(Event):
             rgb = lerp_rgb(START_RGB, END_RGB, t)
             brightness = lerp(START_BRIGHTNESS, END_BRIGHTNESS, t)
             payload = LightOnPayload(rgb_color=rgb, brightness=brightness, transition=TICK_INTERVAL)
-            for light in ctx.lights.values():
-                await asyncio.to_thread(light.on, payload)
+            for key in ctx.lights.keys():
+                await ctx.turn_on(key, payload)
             await asyncio.sleep(TICK_INTERVAL)
         return Daylight()

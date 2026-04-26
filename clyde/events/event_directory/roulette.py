@@ -39,7 +39,7 @@ class Roulette(Event):
 
     async def run(self, ctx: EventContext) -> LightRoutine | None:
         rng = random.Random()
-        ordered: list[Light] = list(ctx.lights.values())
+        ordered: list[tuple[str, Light]] = list(ctx.lights.items())
         if not ordered:
             return None
 
@@ -47,33 +47,33 @@ class Roulette(Event):
         off_payload = LightOffPayload(transition=0.0)
 
         # Clear the room.
-        for light in ordered:
+        for _, light in ordered:
             await asyncio.to_thread(light.off, off_payload)
 
         # Flash every light yellow to open, then clear before the spin.
-        for light in ordered:
-            await asyncio.to_thread(light.on, yellow_payload)
+        for key, _ in ordered:
+            await ctx.turn_on(key, yellow_payload)
         await asyncio.sleep(INITIAL_HOLD_S)
-        for light in ordered:
+        for _, light in ordered:
             await asyncio.to_thread(light.off, off_payload)
 
         # Spin: decelerating pass around the room, landing on a random light.
         start = rng.randrange(len(ordered))
-        await asyncio.to_thread(ordered[start].on, yellow_payload)
+        await ctx.turn_on(ordered[start][0], yellow_payload)
         delays = spin_schedule(rng.uniform(SPIN_MIN_TOTAL_S, SPIN_MAX_TOTAL_S))
         current = start
         for delay in delays:
-            await asyncio.to_thread(ordered[current].off, off_payload)
+            await asyncio.to_thread(ordered[current][1].off, off_payload)
             current = (current + 1) % len(ordered)
-            await asyncio.to_thread(ordered[current].on, yellow_payload)
+            await ctx.turn_on(ordered[current][0], yellow_payload)
             await asyncio.sleep(delay)
 
         # Land: clear the spinner, flash result across the room.
-        await asyncio.to_thread(ordered[current].off, off_payload)
+        await asyncio.to_thread(ordered[current][1].off, off_payload)
         result_color = rng.choice((RED, GREEN))
         result_payload = LightOnPayload(rgb_color=result_color, brightness=BRIGHTNESS, transition=0.0)
-        for light in ordered:
-            await asyncio.to_thread(light.on, result_payload)
+        for key, _ in ordered:
+            await ctx.turn_on(key, result_payload)
         await asyncio.sleep(FINAL_HOLD_S)
 
         return None

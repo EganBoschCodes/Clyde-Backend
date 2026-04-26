@@ -1,14 +1,28 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import ClassVar
 
-from home_assistant_lib import Light
+from home_assistant_lib import Light, LightOnPayload
 
+from clyde.realtime import BUS, LightOnEvent
 from clyde.routines.types import LightRoutine
 
 
 class EventContext:
-    def __init__(self, lights: dict[str, Light]) -> None:
+    def __init__(self, room_key: str, lights: dict[str, Light]) -> None:
+        self.room_key = room_key
         self.lights = lights
+
+    async def turn_on(self, light_key: str, payload: LightOnPayload) -> None:
+        light = self.lights[light_key]
+        await asyncio.to_thread(light.on, payload)
+        BUS.publish(LightOnEvent(
+            room=self.room_key,
+            light=light_key,
+            rgb_color=payload.rgb_color,
+            brightness=payload.brightness,
+            transition=payload.transition,
+        ))
 
 
 class Event(ABC):
