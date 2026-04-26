@@ -18,7 +18,7 @@ PUBLIC_PATH_PREFIXES = (
     "/.well-known/",
     "/authorize",
     "/token",
-    "/api/status",
+    "/api/",
 )
 
 

@@ -17,4 +17,5 @@ from .remove_schedule import remove_schedule
 from .room_off import room_off
 from .set_dim import set_dim
 from .set_routine import set_routine
+from .spotify_search import spotify_search
 from .stop_routine import stop_routine
