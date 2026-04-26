@@ -96,7 +96,7 @@ class RoomManager:
                     prior_states[key] = state
             await self.cancel_task()
             try:
-                follow_up = await event.run(EventContext(room_key=self.room_key, lights=self.lights))
+                follow_up = await event.run(EventContext(room_key=self.room_key, lights=self.lights, set_dim_factor=self.set_dim_factor))
             except Exception as e:
                 await self.restore_after_event(prior_routine, prior_states)
                 return utils.err(e, f"event '{event.NAME}' in '{self.room_name}'")

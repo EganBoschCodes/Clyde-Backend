@@ -29,6 +29,7 @@ class Alarm(Event):
     NAME: ClassVar[str] = "alarm"
 
     async def run(self, ctx: EventContext) -> LightRoutine | None:
+        ctx.set_dim_factor(1.0)
         for tick in range(STEPS + 1):
             t = tick / STEPS
             rgb = lerp_rgb(START_RGB, END_RGB, t)
