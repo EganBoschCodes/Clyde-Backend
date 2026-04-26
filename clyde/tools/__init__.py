@@ -2,6 +2,7 @@ from .add_schedule import add_schedule
 from .fire_event import fire_event
 from .light_off import light_off
 from .light_on import light_on
+from .light_state import light_state
 from .list_events import list_events
 from .list_lights import list_lights
 from .list_media_players import list_media_players
