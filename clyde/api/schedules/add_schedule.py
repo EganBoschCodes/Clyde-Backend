@@ -13,6 +13,7 @@ class AddScheduleRequest(BaseModel):
     event: str
     room: str
     time: str
+    days_of_week: list[int]
 
 
 class AddScheduleResponse(BaseModel):
@@ -20,7 +21,7 @@ class AddScheduleResponse(BaseModel):
 
 
 async def handle_add_schedule(req: AddScheduleRequest) -> utils.Result[AddScheduleResponse]:
-    result = await add_schedule(event=req.event, room=req.room, time=req.time)
+    result = await add_schedule(event=req.event, room=req.room, time=req.time, days_of_week=req.days_of_week)
     if not result.ok or result.schedule is None:
         return utils.err(ValueError(result.error or "failed to add schedule"))
     return utils.ok(AddScheduleResponse(schedule=result.schedule))

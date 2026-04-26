@@ -8,6 +8,6 @@ class ListSchedulesResult(BaseModel):
     schedules: list[ScheduledEvent]
 
 
-@MCP.tool(description="List all persisted scheduled events. Each runs once per day at its specified local time.")
+@MCP.tool(description="List all persisted scheduled events. Each fires at its specified local time on the weekdays listed in days_of_week (0=Mon, 6=Sun).")
 async def list_schedules() -> ListSchedulesResult:
     return ListSchedulesResult(schedules=SCHEDULER.list())

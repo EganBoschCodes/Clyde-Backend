@@ -32,6 +32,8 @@ class Scheduler:
         self.schedules = schedules
         now = datetime.now()
         for sched in self.schedules:
+            if not sched.runs_on(now.weekday()):
+                continue
             if now.time() >= sched.time_of_day():
                 self.last_fired[sched.key()] = now.date()
         self.task = asyncio.create_task(self.run_loop())
@@ -63,8 +65,9 @@ class Scheduler:
             if error:
                 return utils.err(error, "persist schedules")
             self.schedules = next_schedules
-            if datetime.now().time() >= sched.time_of_day():
-                self.last_fired[sched.key()] = datetime.now().date()
+            now = datetime.now()
+            if sched.runs_on(now.weekday()) and now.time() >= sched.time_of_day():
+                self.last_fired[sched.key()] = now.date()
         return utils.ok(sched)
 
     async def remove(self, sched_key: tuple[str, str, str]) -> utils.Result[ScheduledEvent]:
@@ -85,6 +88,8 @@ class Scheduler:
             now = datetime.now()
             for sched in list(self.schedules):
                 if self.last_fired.get(sched.key()) == now.date():
+                    continue
+                if not sched.runs_on(now.weekday()):
                     continue
                 if now.time() < sched.time_of_day():
                     continue
