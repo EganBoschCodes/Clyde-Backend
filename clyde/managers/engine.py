@@ -12,7 +12,7 @@ class Engine:
         self.managers: dict[str, RoomManager] = {}
         for room_key, room in config.rooms.items():
             room_lights = {k: config.lights[k] for k in room.lights}
-            self.managers[room_key] = RoomManager(room.name, room_lights)
+            self.managers[room_key] = RoomManager(room_key, room.name, room_lights)
 
     def get(self, room: str) -> utils.Result[RoomManager]:
         manager = self.managers.get(room)

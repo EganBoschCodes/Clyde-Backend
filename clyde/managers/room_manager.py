@@ -6,6 +6,7 @@ from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightStat
 import clyde.utils as utils
 
 from clyde.events.types import Event, EventContext
+from clyde.realtime import BUS, RoomDimEvent, RoomStateEvent
 from clyde.routines.types import LightRoutine
 
 
@@ -16,7 +17,8 @@ DIM_SNAP_TRANSITION_S = 0.5
 
 
 class RoomManager:
-    def __init__(self, room_name: str, lights: dict[str, Light]) -> None:
+    def __init__(self, room_key: str, room_name: str, lights: dict[str, Light]) -> None:
+        self.room_key = room_key
         self.room_name = room_name
         self.lights = lights
         self.active: LightRoutine | None = None
@@ -36,6 +38,7 @@ class RoomManager:
         self.dim_factor = factor
         if changed:
             self.wake.set()
+            BUS.publish(RoomDimEvent(room=self.room_key, factor=factor))
         return utils.ok(factor)
 
     def scale_payload(self, payload: LightOnPayload) -> LightOnPayload:
@@ -45,18 +48,22 @@ class RoomManager:
         return payload.model_copy(update={"brightness": scaled})
 
     async def start(self, routine: LightRoutine) -> utils.Result[None]:
-        stop_err = await self.stop()
-        _, error = stop_err
-        if error:
-            return utils.err(error, f"stop previous routine in '{self.room_name}'")
+        await self.cancel_active()
         self.active = routine
         self.last_payloads = {}
         self.task = asyncio.create_task(self.run_loop(routine))
+        BUS.publish(RoomStateEvent(room=self.room_key, active_routine=routine.NAME))
         return utils.ok(None)
 
-    async def stop(self) -> utils.Result[None]:
+    async def cancel_active(self) -> None:
         await self.cancel_task()
         self.active = None
+
+    async def stop(self) -> utils.Result[None]:
+        had_active = self.active is not None
+        await self.cancel_active()
+        if had_active:
+            BUS.publish(RoomStateEvent(room=self.room_key, active_routine=None))
         return utils.ok(None)
 
     async def cancel_task(self) -> None:
@@ -100,10 +107,7 @@ class RoomManager:
             await asyncio.to_thread(self.lights[key].restore, state, EVENT_RESTORE_TRANSITION_S)
 
     async def apply_on(self, light_key: str, payload: LightOnPayload) -> utils.Result[None]:
-        stop_err = await self.stop()
-        _, error = stop_err
-        if error:
-            return utils.err(error, f"stop routine before manual on in '{self.room_name}'")
+        await self.cancel_active()
         light = self.lights.get(light_key)
         if light is None:
             return utils.err(KeyError(f"Light '{light_key}' not in room '{self.room_name}'"))
@@ -113,10 +117,7 @@ class RoomManager:
         return utils.ok(None)
 
     async def apply_off(self, light_key: str, transition: float = DEFAULT_OFF_TRANSITION_S) -> utils.Result[None]:
-        stop_err = await self.stop()
-        _, error = stop_err
-        if error:
-            return utils.err(error, f"stop routine before off in '{self.room_name}'")
+        await self.cancel_active()
         light = self.lights.get(light_key)
         if light is None:
             return utils.err(KeyError(f"Light '{light_key}' not in room '{self.room_name}'"))
@@ -127,16 +128,14 @@ class RoomManager:
         return utils.ok(None)
 
     async def apply_off_all(self, transition: float = DEFAULT_OFF_TRANSITION_S) -> utils.Result[dict[str, str]]:
-        stop_err = await self.stop()
-        _, error = stop_err
-        if error:
-            return utils.err(error, f"stop routine before off in '{self.room_name}'")
+        await self.cancel_active()
         payload = LightOffPayload(transition=transition)
         entity_ids = [light.entity_id for light in self.lights.values()]
         _, error = await asyncio.to_thread(turn_off_many, entity_ids, payload)
         if error:
             failed = {key: str(error) for key in self.lights.keys()}
             return utils.ok(failed)
+        BUS.publish(RoomStateEvent(room=self.room_key, active_routine=None))
         return utils.ok({})
 
     async def run_loop(self, routine: LightRoutine) -> None:
