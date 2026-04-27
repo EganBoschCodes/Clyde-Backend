@@ -1,6 +1,6 @@
 [project]
 name = "clyde"
-version = "0.1.2"
+version = "0.1.3"
 description = "MCP server + web API frontend for the home Home Assistant instance."
 requires-python = ">=3.14"
 dependencies = [

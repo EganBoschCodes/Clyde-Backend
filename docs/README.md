@@ -35,6 +35,9 @@ audiences in mind:
   allowlist, and likely a chunk of the routines/events to match your
   hardware and preferences.
 
+This is personal software and thus entirely made with Claude Code, so don't
+look to this as my standard of quality code.
+
 There is no support promise, no stable API, and no compatibility
 guarantee across commits.
 
