@@ -11,4 +11,5 @@ from .movie import Movie
 from .ocean import Ocean
 from .party import Party
 from .police import Police
+from .spring import Spring
 from .sunset import Sunset

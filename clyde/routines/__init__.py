@@ -12,6 +12,7 @@ from .routine_directory import (
     Ocean,
     Party,
     Police,
+    Spring,
     Sunset,
 )
 from .types import LightRoutine
@@ -30,5 +31,6 @@ ROUTINES: dict[str, type[LightRoutine]] = {
     Ocean.NAME: Ocean,
     Party.NAME: Party,
     Police.NAME: Police,
+    Spring.NAME: Spring,
     Sunset.NAME: Sunset,
 }
