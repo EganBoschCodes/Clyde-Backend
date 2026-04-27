@@ -12,7 +12,7 @@ class Sunset(TransitionalPaletteRoutine):
     PALETTE: ClassVar[tuple[RGB, ...]] = tuple(hex_to_rgb(h) for h in (
         "#F3900F",
         "#FF7828",
-        "#C47419",
+        "#E97C00",
         "#FF5A3C",
         "#E6465A",
         "#DC3278",
