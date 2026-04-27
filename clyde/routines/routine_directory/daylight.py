@@ -4,17 +4,18 @@ from typing import ClassVar
 
 from home_assistant_lib import RGB, LightOnPayload
 
+from ...utils import hex_to_rgb
 from ..types import LightRoutine
 
 
 KEYFRAMES: tuple[tuple[time, RGB], ...] = (
-    (time(0, 0), (255, 130, 60)),
-    (time(6, 0), (220, 230, 255)),
-    (time(9, 0), (240, 250, 255)),
-    (time(12, 0), (255, 255, 255)),
-    (time(17, 0), (255, 230, 190)),
-    (time(20, 0), (255, 170, 100)),
-    (time(23, 59), (255, 130, 60)),
+    (time(0, 0), hex_to_rgb("#FF823C")),
+    (time(6, 0), hex_to_rgb("#DCE6FF")),
+    (time(9, 0), hex_to_rgb("#F0FAFF")),
+    (time(12, 0), hex_to_rgb("#FFFFFF")),
+    (time(17, 0), hex_to_rgb("#FFE6BE")),
+    (time(20, 0), hex_to_rgb("#FFAA64")),
+    (time(23, 59), hex_to_rgb("#FF823C")),
 )
 BRIGHTNESS = 255
 TICK_INTERVAL = 60.0

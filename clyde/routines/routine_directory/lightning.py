@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from home_assistant_lib import LightOnPayload
 
+from ...utils import hex_to_rgb
 from ..types import LightRoutine
 
 
@@ -20,7 +21,9 @@ FLASH_GAP_TICKS = 1
 MIN_BRIGHTNESS = 102
 MAX_BRIGHTNESS = 255
 
-FLASH_OFF = LightOnPayload(rgb_color=(0, 0, 0), brightness=1, transition=0)
+OFF_COLOR = hex_to_rgb("#000000")
+ON_COLOR = hex_to_rgb("#FFFFFF")
+FLASH_OFF = LightOnPayload(rgb_color=OFF_COLOR, brightness=1, transition=0)
 
 
 class Lightning(LightRoutine):
@@ -38,7 +41,7 @@ class Lightning(LightRoutine):
 
     def make_on(self) -> LightOnPayload:
         brightness = self.rng.randint(MIN_BRIGHTNESS, MAX_BRIGHTNESS)
-        return LightOnPayload(rgb_color=(255, 255, 255), brightness=brightness, transition=0)
+        return LightOnPayload(rgb_color=ON_COLOR, brightness=brightness, transition=0)
 
     def pick_independent(self, lights: list[str]) -> set[str]:
         subset = {light for light in lights if self.rng.random() < PER_LIGHT_ON_PROB}

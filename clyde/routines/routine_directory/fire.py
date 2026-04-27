@@ -4,16 +4,17 @@ from typing import ClassVar
 
 from home_assistant_lib import RGB, LightOnPayload
 
+from ...utils import hex_to_rgb
 from ..types import LightRoutine
 
 
 TICK_INTERVAL = 0.12
-BASES: tuple[RGB, ...] = (
-    (255, 40, 0),
-    (255, 80, 0),
-    (255, 120, 20),
-    (255, 160, 40),
-)
+BASES: tuple[RGB, ...] = tuple(hex_to_rgb(h) for h in (
+    "#FF2800",
+    "#FF5000",
+    "#FF7814",
+    "#FFA028",
+))
 JITTER = 15
 BRIGHTNESS_MIN = 100
 BRIGHTNESS_MAX = 255

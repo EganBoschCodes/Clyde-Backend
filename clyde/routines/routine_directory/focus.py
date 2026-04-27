@@ -3,12 +3,13 @@ from typing import ClassVar
 
 from home_assistant_lib import RGB, LightOnPayload
 
+from ...utils import hex_to_rgb
 from ..types import LightRoutine
 
 
 TICK_INTERVAL = 60.0
 TRANSITION = 2.0
-COLOR: RGB = (255, 255, 240)
+COLOR: RGB = hex_to_rgb("#FFFFF0")
 BRIGHTNESS = 255
 
 

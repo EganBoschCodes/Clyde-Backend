@@ -1,26 +1,17 @@
-import random
-from datetime import datetime
 from typing import ClassVar
 
-from home_assistant_lib import LightOnPayload, hue_to_rgb
+from home_assistant_lib import RGB
 
-from ..types import LightRoutine
-
-
-TICK_INTERVAL = 0.4
-BRIGHTNESS = 255
+from ...utils import hue_to_rgb
+from ..transitional_palette import TransitionalPaletteRoutine
 
 
-class Party(LightRoutine):
+PALETTE_SIZE = 7
+
+
+class Party(TransitionalPaletteRoutine):
     NAME: ClassVar[str] = "party"
-    tick_interval: ClassVar[float] = TICK_INTERVAL
-
-    def __init__(self) -> None:
-        self.rng = random.Random()
-
-    async def step(self, now: datetime, lights: list[str]) -> dict[str, LightOnPayload]:
-        frame: dict[str, LightOnPayload] = {}
-        for key in lights:
-            rgb = hue_to_rgb(self.rng.random())
-            frame[key] = LightOnPayload(rgb_color=rgb, brightness=BRIGHTNESS, transition=0)
-        return frame
+    tick_interval: ClassVar[float] = 0.4
+    PALETTE: ClassVar[tuple[RGB, ...]] = tuple(hue_to_rgb(i / PALETTE_SIZE) for i in range(PALETTE_SIZE))
+    PAUSE_RANGE: ClassVar[tuple[float, float]] = (0.4, 0.4)
+    TRANSITION_RANGE: ClassVar[tuple[float, float]] = (0.0, 0.0)

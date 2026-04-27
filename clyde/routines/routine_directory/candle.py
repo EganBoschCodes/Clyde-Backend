@@ -4,11 +4,12 @@ from typing import ClassVar
 
 from home_assistant_lib import RGB, LightOnPayload
 
+from ...utils import hex_to_rgb
 from ..types import LightRoutine
 
 
 TICK_INTERVAL = 0.4
-BASE: RGB = (255, 147, 41)
+BASE: RGB = hex_to_rgb("#FF9329")
 JITTER = 6
 BRIGHTNESS_MIN = 179
 BRIGHTNESS_MAX = 255

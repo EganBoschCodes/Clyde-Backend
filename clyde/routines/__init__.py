@@ -1,6 +1,4 @@
 from .routine_directory import (
-    Away,
-    Breathe,
     Candle,
     Daylight,
     Disco,
@@ -10,18 +8,14 @@ from .routine_directory import (
     Lightning,
     Love,
     Movie,
-    NightLight,
     Ocean,
     Party,
     Police,
-    Rainbow,
     Sunset,
 )
 from .types import LightRoutine
 
 ROUTINES: dict[str, type[LightRoutine]] = {
-    Away.NAME: Away,
-    Breathe.NAME: Breathe,
     Candle.NAME: Candle,
     Daylight.NAME: Daylight,
     Disco.NAME: Disco,
@@ -31,10 +25,8 @@ ROUTINES: dict[str, type[LightRoutine]] = {
     Lightning.NAME: Lightning,
     Love.NAME: Love,
     Movie.NAME: Movie,
-    NightLight.NAME: NightLight,
     Ocean.NAME: Ocean,
     Party.NAME: Party,
     Police.NAME: Police,
-    Rainbow.NAME: Rainbow,
     Sunset.NAME: Sunset,
 }

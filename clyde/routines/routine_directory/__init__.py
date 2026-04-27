@@ -1,5 +1,3 @@
-from .away import Away
-from .breathe import Breathe
 from .candle import Candle
 from .daylight import Daylight
 from .disco import Disco
@@ -9,9 +7,7 @@ from .iridescent import Iridescent
 from .lightning import Lightning
 from .love import Love
 from .movie import Movie
-from .night_light import NightLight
 from .ocean import Ocean
 from .party import Party
 from .police import Police
-from .rainbow import Rainbow
 from .sunset import Sunset

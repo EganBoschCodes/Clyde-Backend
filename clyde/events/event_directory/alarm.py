@@ -5,14 +5,15 @@ from home_assistant_lib import RGB, LightOnPayload
 
 from clyde.routines.routine_directory.daylight import Daylight
 from clyde.routines.types import LightRoutine
+from clyde.utils import hex_to_rgb
 
 from ..types import Event, EventContext
 
 
 STEPS = 120
 TICK_INTERVAL = 5.0
-START_RGB: RGB = (255, 140, 40)
-END_RGB: RGB = (200, 220, 255)
+START_RGB: RGB = hex_to_rgb("#FF8C28")
+END_RGB: RGB = hex_to_rgb("#C8DCFF")
 START_BRIGHTNESS = 3
 END_BRIGHTNESS = 255
 

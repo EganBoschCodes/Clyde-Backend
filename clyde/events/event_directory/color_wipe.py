@@ -4,11 +4,12 @@ from typing import ClassVar
 from home_assistant_lib import LightOffPayload, LightOnPayload
 
 from clyde.routines.types import LightRoutine
+from clyde.utils import hex_to_rgb
 
 from ..types import Event, EventContext
 
 
-COLOR = (0, 128, 255)
+COLOR = hex_to_rgb("#0080FF")
 BRIGHTNESS = 255
 STAGGER = 0.2
 HOLD = 2.0

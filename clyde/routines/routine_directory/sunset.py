@@ -1,86 +1,26 @@
-import random
-from datetime import datetime
 from typing import ClassVar
 
-from home_assistant_lib import RGB, LightOnPayload
+from home_assistant_lib import RGB
 
-from ..types import LightRoutine
-
-
-TICK_INTERVAL = 0.25
-# Ordered along the sunset spectrum so neighbor-drift reads as a gradient wander.
-PALETTE: tuple[RGB, ...] = (
-    (255, 180, 80),
-    (255, 120, 40),
-    (255, 90, 60),
-    (255, 100, 140),
-    (255, 150, 170),
-    (230, 70, 90),
-    (220, 50, 120),
-    (200, 60, 160),
-    (170, 70, 200),
-    (130, 50, 190),
-    (60, 20, 80),
-)
-NEIGHBOR_RADIUS = 3
-TRANSITION_MIN_S = 4.0
-TRANSITION_MAX_S = 8.0
-HOLD_CHANCE = 0.05
-HOLD_MIN_S = 8.0
-HOLD_MAX_S = 12.0
-HOLD_ANCHORS: tuple[RGB, ...] = (
-    (130, 50, 190),
-    (200, 60, 160),
-    (60, 20, 80),
-)
+from ...utils import hex_to_rgb
+from ..transitional_palette import TransitionalPaletteRoutine
 
 
-def pick_neighbor(rng: random.Random, prior: RGB | None) -> RGB:
-    if prior is None or prior not in PALETTE:
-        return rng.choice(PALETTE)
-    idx = PALETTE.index(prior)
-    lo = max(0, idx - NEIGHBOR_RADIUS)
-    hi = min(len(PALETTE), idx + NEIGHBOR_RADIUS + 1)
-    choices = tuple(c for i, c in enumerate(PALETTE[lo:hi], start=lo) if i != idx)
-    return rng.choice(choices)
-
-
-class Sunset(LightRoutine):
+class Sunset(TransitionalPaletteRoutine):
     NAME: ClassVar[str] = "sunset"
-    tick_interval: ClassVar[float] = TICK_INTERVAL
-
-    def __init__(self) -> None:
-        self.rng = random.Random()
-        self.next_swap: dict[str, float] = {}
-        self.last_color: dict[str, RGB] = {}
-        self.elapsed = 0.0
-
-    async def step(self, now: datetime, lights: list[str]) -> dict[str, LightOnPayload]:
-        frame: dict[str, LightOnPayload] = {}
-        for key in lights:
-            due = self.next_swap.get(key)
-            if due is not None and self.elapsed < due:
-                continue
-
-            # Occasional hold: park the light on a deep anchor for a beat.
-            if due is not None and self.rng.random() < HOLD_CHANCE:
-                color = self.rng.choice(HOLD_ANCHORS)
-                hold = self.rng.uniform(HOLD_MIN_S, HOLD_MAX_S)
-                self.last_color[key] = color
-                self.next_swap[key] = self.elapsed + hold
-                frame[key] = LightOnPayload(
-                    rgb_color=color, brightness=255, transition=TRANSITION_MAX_S
-                )
-                continue
-
-            color = pick_neighbor(self.rng, self.last_color.get(key))
-            transition = self.rng.uniform(TRANSITION_MIN_S, TRANSITION_MAX_S)
-
-            self.last_color[key] = color
-            start_offset = self.rng.uniform(0.0, TRANSITION_MAX_S) if due is None else 0.0
-            self.next_swap[key] = self.elapsed + start_offset + transition
-
-            frame[key] = LightOnPayload(rgb_color=color, brightness=255, transition=transition)
-
-        self.elapsed += TICK_INTERVAL
-        return frame
+    tick_interval: ClassVar[float] = 0.25
+    PALETTE: ClassVar[tuple[RGB, ...]] = tuple(hex_to_rgb(h) for h in (
+        "#FFB450",
+        "#FF7828",
+        "#FF5A3C",
+        "#FF648C",
+        "#FF96AA",
+        "#E6465A",
+        "#DC3278",
+        "#C83CA0",
+        "#AA46C8",
+        "#8232BE",
+        "#3C1450",
+    ))
+    PAUSE_RANGE: ClassVar[tuple[float, float]] = (0.0, 0.0)
+    TRANSITION_RANGE: ClassVar[tuple[float, float]] = (4.0, 8.0)

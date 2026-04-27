@@ -5,13 +5,14 @@ from typing import ClassVar
 from home_assistant_lib import Light, LightOffPayload, LightOnPayload
 
 from clyde.routines.types import LightRoutine
+from clyde.utils import hex_to_rgb
 
 from ..types import Event, EventContext
 
 
-YELLOW = (255, 200, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
+YELLOW = hex_to_rgb("#FFC800")
+RED = hex_to_rgb("#FF0000")
+GREEN = hex_to_rgb("#00FF00")
 BRIGHTNESS = 255
 
 INITIAL_HOLD_S = 1.0

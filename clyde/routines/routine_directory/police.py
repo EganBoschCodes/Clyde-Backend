@@ -3,13 +3,14 @@ from typing import ClassVar
 
 from home_assistant_lib import RGB, LightOnPayload
 
+from ...utils import hex_to_rgb
 from ..types import LightRoutine
 
 
 TICK_INTERVAL = 0.15
 BRIGHTNESS = 255
-RED: RGB = (255, 0, 0)
-BLUE: RGB = (0, 0, 255)
+RED: RGB = hex_to_rgb("#FF0000")
+BLUE: RGB = hex_to_rgb("#0000FF")
 
 
 class Police(LightRoutine):
