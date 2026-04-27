@@ -10,17 +10,15 @@ class Sunset(TransitionalPaletteRoutine):
     NAME: ClassVar[str] = "sunset"
     tick_interval: ClassVar[float] = 0.25
     PALETTE: ClassVar[tuple[RGB, ...]] = tuple(hex_to_rgb(h) for h in (
-        "#FFB450",
+        "#F3900F",
         "#FF7828",
+        "#C47419",
         "#FF5A3C",
-        "#FF648C",
-        "#FF96AA",
         "#E6465A",
         "#DC3278",
         "#C83CA0",
         "#AA46C8",
-        "#8232BE",
-        "#3C1450",
+        "#5B25DA",
     ))
     PAUSE_RANGE: ClassVar[tuple[float, float]] = (0.0, 0.0)
     TRANSITION_RANGE: ClassVar[tuple[float, float]] = (4.0, 8.0)
