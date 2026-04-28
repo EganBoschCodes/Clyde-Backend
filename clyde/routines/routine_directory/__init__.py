@@ -1,4 +1,5 @@
 from .candle import Candle
+from .damage import Damage
 from .daylight import Daylight
 from .disco import Disco
 from .fire import Fire

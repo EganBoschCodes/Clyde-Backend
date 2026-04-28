@@ -1,5 +1,6 @@
 from .routine_directory import (
     Candle,
+    Damage,
     Daylight,
     Disco,
     Fire,
@@ -19,6 +20,7 @@ from .types import LightRoutine
 
 ROUTINES: dict[str, type[LightRoutine]] = {
     Candle.NAME: Candle,
+    Damage.NAME: Damage,
     Daylight.NAME: Daylight,
     Disco.NAME: Disco,
     Fire.NAME: Fire,
