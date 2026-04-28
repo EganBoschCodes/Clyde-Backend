@@ -27,5 +27,5 @@ class ColorWipe(Event):
             await asyncio.sleep(STAGGER)
         await asyncio.sleep(HOLD)
         for _, light in ordered:
-            await asyncio.to_thread(light.off, off_payload)
+            await light.off(off_payload)
             await asyncio.sleep(STAGGER)

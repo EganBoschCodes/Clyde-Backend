@@ -28,7 +28,7 @@ class Doorbell(Event):
                     await ctx.turn_on(key, on_payload)
                 await asyncio.sleep(FLASH_ON)
                 for light in ctx.lights.values():
-                    await asyncio.to_thread(light.off, off_payload)
+                    await light.off(off_payload)
                 await asyncio.sleep(FLASH_OFF)
             if burst == 0:
                 await asyncio.sleep(PAUSE)

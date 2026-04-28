@@ -27,5 +27,5 @@ class Notify(Event):
                 await ctx.turn_on(key, on_payload)
             await asyncio.sleep(ON_DURATION)
             for light in ctx.lights.values():
-                await asyncio.to_thread(light.off, off_payload)
+                await light.off(off_payload)
             await asyncio.sleep(OFF_DURATION)

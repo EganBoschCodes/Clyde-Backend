@@ -19,7 +19,7 @@ class MiniParty(Event):
     async def run(self, ctx: EventContext) -> LightRoutine | None:
         active: list[tuple[str, int | None]] = []
         for key, light in ctx.lights.items():
-            state, error = await asyncio.to_thread(light.get_state)
+            state, error = await light.get_state()
             if error is not None or state is None:
                 continue
             if not state.on:

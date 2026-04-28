@@ -107,7 +107,7 @@ class RoomManager:
             prior_states: dict[str, LightState] = {}
             if prior_routine is None:
                 for key, light in self.lights.items():
-                    state, error = await asyncio.to_thread(light.get_state)
+                    state, error = await light.get_state()
                     if error or state is None:
                         continue
                     prior_states[key] = state
@@ -131,7 +131,7 @@ class RoomManager:
             self.task = asyncio.create_task(self.run_loop(prior_routine))
             return
         for key, state in prior_states.items():
-            await asyncio.to_thread(self.lights[key].restore, state, EVENT_RESTORE_TRANSITION_S)
+            await self.lights[key].restore(state, EVENT_RESTORE_TRANSITION_S)
 
     async def apply_on(self, light_key: str, payload: LightOnPayload) -> utils.Result[None]:
         await self.cancel_active()
@@ -139,7 +139,7 @@ class RoomManager:
         if light is None:
             return utils.err(KeyError(f"Light '{light_key}' not in room '{self.room_name}'"))
         outgoing = self.scale_payload(payload)
-        _, error = await asyncio.to_thread(light.on, outgoing)
+        _, error = await light.on(outgoing)
         if error:
             return utils.err(error, f"turn_on {light.entity_id}")
         self.publish_light_on(light_key, outgoing)
@@ -151,7 +151,7 @@ class RoomManager:
         if light is None:
             return utils.err(KeyError(f"Light '{light_key}' not in room '{self.room_name}'"))
         payload = LightOffPayload(transition=transition)
-        _, error = await asyncio.to_thread(light.off, payload)
+        _, error = await light.off(payload)
         if error:
             return utils.err(error, f"turn_off {light.entity_id}")
         return utils.ok(None)
@@ -160,7 +160,7 @@ class RoomManager:
         await self.cancel_active()
         payload = LightOffPayload(transition=transition)
         entity_ids = [light.entity_id for light in self.lights.values()]
-        _, error = await asyncio.to_thread(turn_off_many, entity_ids, payload)
+        _, error = await turn_off_many(entity_ids, payload)
         if error:
             failed = {key: str(error) for key in self.lights.keys()}
             return utils.ok(failed)
@@ -203,7 +203,7 @@ class RoomManager:
                     groups[group_key] = (outgoing, [light.entity_id])
                     continue
                 existing[1].append(light.entity_id)
-            await asyncio.gather(*(asyncio.to_thread(turn_on_many, entity_ids, grouped_payload) for grouped_payload, entity_ids in groups.values()))
+            await asyncio.gather(*(turn_on_many(entity_ids, grouped_payload) for grouped_payload, entity_ids in groups.values()))
             for key, outgoing in emitted:
                 self.publish_light_on(key, outgoing)
             first = False

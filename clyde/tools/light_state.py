@@ -19,7 +19,7 @@ async def light_state(light: str) -> LightStateResult:
     light_obj = utils.CONFIG.lights.get(light)
     if light_obj is None:
         return LightStateResult(ok=False, light=light, error=f"Unknown light '{light}'")
-    state, error = light_obj.get_state()
+    state, error = await light_obj.get_state()
     if error:
         return LightStateResult(ok=False, light=light, error=str(error))
     return LightStateResult(ok=True, light=light, state=state)

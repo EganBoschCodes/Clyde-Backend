@@ -49,14 +49,14 @@ class Roulette(Event):
 
         # Clear the room.
         for _, light in ordered:
-            await asyncio.to_thread(light.off, off_payload)
+            await light.off(off_payload)
 
         # Flash every light yellow to open, then clear before the spin.
         for key, _ in ordered:
             await ctx.turn_on(key, yellow_payload)
         await asyncio.sleep(INITIAL_HOLD_S)
         for _, light in ordered:
-            await asyncio.to_thread(light.off, off_payload)
+            await light.off(off_payload)
 
         # Spin: decelerating pass around the room, landing on a random light.
         start = rng.randrange(len(ordered))
@@ -64,13 +64,13 @@ class Roulette(Event):
         delays = spin_schedule(rng.uniform(SPIN_MIN_TOTAL_S, SPIN_MAX_TOTAL_S))
         current = start
         for delay in delays:
-            await asyncio.to_thread(ordered[current][1].off, off_payload)
+            await ordered[current][1].off(off_payload)
             current = (current + 1) % len(ordered)
             await ctx.turn_on(ordered[current][0], yellow_payload)
             await asyncio.sleep(delay)
 
         # Land: clear the spinner, flash result across the room.
-        await asyncio.to_thread(ordered[current][1].off, off_payload)
+        await ordered[current][1].off(off_payload)
         result_color = rng.choice((RED, GREEN))
         result_payload = LightOnPayload(rgb_color=result_color, brightness=BRIGHTNESS, transition=0.0)
         for key, _ in ordered:

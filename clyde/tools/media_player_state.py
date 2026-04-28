@@ -18,7 +18,7 @@ async def media_player_state(media_player: str) -> MediaPlayerStateResult:
     player, error = resolve_media_player(media_player)
     if error:
         return MediaPlayerStateResult(ok=False, media_player=media_player, error=str(error))
-    state, error = player.get_state()
+    state, error = await player.get_state()
     if error:
         return MediaPlayerStateResult(ok=False, media_player=media_player, error=str(error))
     return MediaPlayerStateResult(ok=True, media_player=media_player, state=state)

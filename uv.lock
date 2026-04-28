@@ -343,12 +343,14 @@ source = { editable = "../Home-Assistant-Lib" }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "websockets" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.9" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "websockets", specifier = ">=13.0" },
 ]
 
 [[package]]

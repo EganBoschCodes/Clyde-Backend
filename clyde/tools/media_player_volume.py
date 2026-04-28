@@ -22,12 +22,12 @@ async def media_player_volume(media_player: str, level: float | None = None, mut
         return MediaPlayerVolumeResult(ok=False, media_player=media_player, error=str(error))
 
     if level is not None:
-        _, error = player.volume_set(level)
+        _, error = await player.volume_set(level)
         if error:
             return MediaPlayerVolumeResult(ok=False, media_player=media_player, error=str(error))
 
     if mute is not None:
-        _, error = player.volume_mute(mute)
+        _, error = await player.volume_mute(mute)
         if error:
             return MediaPlayerVolumeResult(ok=False, media_player=media_player, error=str(error))
 

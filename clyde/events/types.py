@@ -1,4 +1,3 @@
-import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import ClassVar
@@ -19,7 +18,7 @@ class EventContext:
 
     async def turn_on(self, light_key: str, payload: LightOnPayload) -> None:
         light = self.lights[light_key]
-        await asyncio.to_thread(light.on, payload)
+        await light.on(payload)
         BUS.publish(LightOnEvent(
             room=self.room_key,
             light=light_key,

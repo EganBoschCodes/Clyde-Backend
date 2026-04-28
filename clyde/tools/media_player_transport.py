@@ -20,15 +20,15 @@ class MediaPlayerTransportResult(BaseModel):
     error: str | None = None
 
 
-def dispatch(player: MediaPlayer, action: TransportAction) -> utils.Result[None]:
+async def dispatch(player: MediaPlayer, action: TransportAction) -> utils.Result[None]:
     match action:
-        case "on": return player.on()
-        case "off": return player.off()
-        case "play": return player.play()
-        case "pause": return player.pause()
-        case "stop": return player.stop()
-        case "next": return player.next_track()
-        case "previous": return player.previous_track()
+        case "on": return await player.on()
+        case "off": return await player.off()
+        case "play": return await player.play()
+        case "pause": return await player.pause()
+        case "stop": return await player.stop()
+        case "next": return await player.next_track()
+        case "previous": return await player.previous_track()
         case _ as x: assert_never(x)
 
 
@@ -37,7 +37,7 @@ async def media_player_transport(media_player: str, action: TransportAction) -> 
     player, error = resolve_media_player(media_player)
     if error:
         return MediaPlayerTransportResult(ok=False, media_player=media_player, action=action, error=str(error))
-    _, error = dispatch(player, action)
+    _, error = await dispatch(player, action)
     if error:
         return MediaPlayerTransportResult(ok=False, media_player=media_player, action=action, error=str(error))
     return MediaPlayerTransportResult(ok=True, media_player=media_player, action=action)

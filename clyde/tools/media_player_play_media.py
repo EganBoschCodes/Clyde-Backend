@@ -27,7 +27,7 @@ async def media_player_play_media(
         return MediaPlayerPlayMediaResult(ok=False, media_player=media_player, media_content_id=media_content_id, media_content_type=media_content_type, error=str(error))
 
     payload = PlayMediaPayload(media_content_id=media_content_id, media_content_type=media_content_type, enqueue=enqueue, announce=announce)
-    _, error = player.play_media(payload)
+    _, error = await player.play_media(payload)
     if error:
         return MediaPlayerPlayMediaResult(ok=False, media_player=media_player, media_content_id=media_content_id, media_content_type=media_content_type, error=str(error))
 

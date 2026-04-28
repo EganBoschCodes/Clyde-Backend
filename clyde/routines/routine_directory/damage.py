@@ -5,6 +5,7 @@ from typing import ClassVar
 from home_assistant_lib import RGB, LightOnPayload
 
 from ...utils import hex_to_rgb
+from ..jitter import clamp
 from ..types import LightRoutine
 
 
@@ -29,6 +30,11 @@ SPARK_INTERVAL_MAX_S = 14.0
 SPARK_DURATION_TICKS = 5
 SPARK_HALF_PERIOD_TICKS = 1
 SPARK_TRANSITION = TICK_INTERVAL
+
+FIRE_LIGHTS: frozenset[str] = frozenset({"living_room_lamp_1", "living_room_lamp_2"})
+FIRE_BASES: tuple[RGB, ...] = tuple(hex_to_rgb(h) for h in ("#FF2800", "#FF5000", "#FF7814", "#FFA028"))
+FIRE_JITTER = 15
+FIRE_BRIGHTNESS_RANGE: tuple[int, int] = (100, 255)
 
 BASE_PAYLOAD = LightOnPayload(rgb_color=BASE_COLOR, brightness=BASE_BRIGHTNESS, transition=TICK_INTERVAL)
 SPARK_BRIGHT_PAYLOAD = LightOnPayload(rgb_color=SPARK_BRIGHT_COLOR, brightness=SPARK_BRIGHT_LEVEL, transition=SPARK_TRANSITION)
@@ -59,7 +65,7 @@ class Damage(LightRoutine):
     def maybe_start_flicker(self, now: datetime, lights: list[str]) -> None:
         if self.flicker_ticks_left > 0 or self.next_flicker_at is None or now < self.next_flicker_at:
             return
-        candidates = [light for light in lights if light != self.spark_light]
+        candidates = [light for light in lights if light != self.spark_light and light not in FIRE_LIGHTS]
         if candidates:
             self.flicker_light = self.rng.choice(candidates)
             self.flicker_ticks_left = FLICKER_DURATION_TICKS
@@ -68,11 +74,22 @@ class Damage(LightRoutine):
     def maybe_start_spark(self, now: datetime, lights: list[str]) -> None:
         if self.spark_ticks_left > 0 or self.next_spark_at is None or now < self.next_spark_at:
             return
-        candidates = [light for light in lights if light != self.flicker_light]
+        candidates = [light for light in lights if light != self.flicker_light and light not in FIRE_LIGHTS]
         if candidates:
             self.spark_light = self.rng.choice(candidates)
             self.spark_ticks_left = SPARK_DURATION_TICKS
         self.schedule_spark(now)
+
+    def fire_payload(self) -> LightOnPayload:
+        base = self.rng.choice(FIRE_BASES)
+        rgb: RGB = (
+            clamp(base[0] + self.rng.randint(-FIRE_JITTER, FIRE_JITTER)),
+            clamp(base[1] + self.rng.randint(-FIRE_JITTER, FIRE_JITTER)),
+            clamp(base[2] + self.rng.randint(-FIRE_JITTER, FIRE_JITTER)),
+        )
+        bmin, bmax = FIRE_BRIGHTNESS_RANGE
+        brightness = self.rng.randint(bmin, bmax)
+        return LightOnPayload(rgb_color=rgb, brightness=brightness, transition=TICK_INTERVAL)
 
     def flicker_payload(self) -> LightOnPayload:
         elapsed = FLICKER_DURATION_TICKS - self.flicker_ticks_left
@@ -105,7 +122,9 @@ class Damage(LightRoutine):
 
         frame: dict[str, LightOnPayload] = {}
         for light in lights:
-            if light == self.flicker_light and self.flicker_ticks_left > 0:
+            if light in FIRE_LIGHTS:
+                frame[light] = self.fire_payload()
+            elif light == self.flicker_light and self.flicker_ticks_left > 0:
                 frame[light] = self.flicker_payload()
             elif light == self.spark_light and self.spark_ticks_left > 0:
                 frame[light] = self.spark_payload()
