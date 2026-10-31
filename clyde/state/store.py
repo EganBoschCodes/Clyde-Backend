@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 import clyde.utils as utils
 
+from clyde.routines.custom.types import CustomRoutineSpec
 from clyde.scheduler.types import ScheduledEvent
 
 from .types import PersistedState, RoomState
@@ -71,6 +72,23 @@ class StateStore:
 
     def rooms(self) -> dict[str, RoomState]:
         return dict(self.state.rooms)
+
+    def custom_routines(self) -> dict[str, CustomRoutineSpec]:
+        return dict(self.state.custom_routines)
+
+    def set_custom_routine(self, key: str, spec: CustomRoutineSpec) -> utils.Result[None]:
+        with self.lock:
+            routines = {**self.state.custom_routines, key: spec}
+            self.state = self.state.model_copy(update={"custom_routines": routines})
+            return self.write()
+
+    def delete_custom_routine(self, key: str) -> utils.Result[None]:
+        with self.lock:
+            if key not in self.state.custom_routines:
+                return utils.err(KeyError(f"Unknown custom routine '{key}'"))
+            routines = {k: v for k, v in self.state.custom_routines.items() if k != key}
+            self.state = self.state.model_copy(update={"custom_routines": routines})
+            return self.write()
 
     def set_schedules(self, schedules: list[ScheduledEvent]) -> utils.Result[None]:
         with self.lock:

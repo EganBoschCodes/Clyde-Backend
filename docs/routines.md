@@ -8,6 +8,7 @@ Long-running, per-room light behaviors driven by a tick loop.
 - [The LightRoutine ABC](#the-lightroutine-abc)
 - [Authoring a Routine](#authoring-a-routine)
 - [Registration](#registration)
+- [Custom Routines (Studio)](#custom-routines-studio)
 - [Lifecycle](#lifecycle)
 
 ---
@@ -95,6 +96,38 @@ purples, an occasional slime green) and adds two overlays: a per-lamp
 fade back to the palette) and a rare room-wide cold violet-white
 "lightning" flicker. Overlay sequences are queued per tick; a light that
 is mid-ghost has its drift payloads dropped until it recovers.
+
+---
+
+## Custom Routines (Studio)
+
+Users can define their own routines without writing code. A
+`CustomRoutineSpec` (`clyde/routines/custom/types.py`) has a display
+`name` (1-40 chars), 1-8 `#RRGGBB` `colors`, a `style`, a `speed` in
+[0, 1] (0 slowest, 1 fastest) and a `brightness` in [1, 255]. Specs are
+stored in `state.json` under `custom_routines`, keyed by `studio_` plus a
+slug of the name (`Spooky Night` becomes `studio_spooky_night`); an
+existing key can be passed to edit a routine under a stable key.
+
+| Style | Behavior |
+|-------|----------|
+| `drift` | Smooth palette crossfades across lights (`TransitionalPaletteRoutine`) |
+| `flicker` | Candle/fire-like jitter around the colors (`JitterRoutine`) |
+| `pulse` | The whole room breathes while slowly cycling colors |
+| `chase` | Colors step light-to-light around the room in order |
+| `static` | Colors distributed across lights, set once and re-sent periodically |
+
+`clyde/routines/custom/factory.py::build_custom_routine(key, spec)` builds
+a `LightRoutine` whose `NAME` is the key. `resolve_routine(name)` in
+`clyde/routines/resolve.py` is the single place a routine name becomes an
+instance: it checks built-in `ROUTINES`, then stored custom specs.
+Saving a routine that is running restarts it with the new spec; deleting
+one stops it. The reserved key `studio_preview` is used for unsaved live
+previews and is never persisted as a room's active routine.
+
+HTTP: `GET /api/studio/routines`, `PUT /api/studio/routines`,
+`DELETE /api/studio/routines/{key}`, `POST /api/studio/preview`. MCP:
+`list_custom_routines`, `save_custom_routine`, `delete_custom_routine`.
 
 ---
 

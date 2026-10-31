@@ -1,7 +1,7 @@
 import clyde.utils as utils
 
 from clyde.events.types import Event
-from clyde.routines import ROUTINES
+from clyde.routines.resolve import resolve_routine
 from clyde.routines.types import LightRoutine
 from clyde.state import STATE
 
@@ -46,6 +46,9 @@ class Engine:
             return utils.err(error, f"cancel event in '{room}'")
         return await manager.cancel_event()
 
+    def rooms_running(self, routine_name: str) -> list[str]:
+        return [key for key, manager in self.managers.items() if manager.active is not None and manager.active.NAME == routine_name]
+
     def set_dim_factor(self, room: str, factor: float) -> utils.Result[float]:
         manager, error = self.get(room)
         if error:
@@ -67,11 +70,11 @@ class Engine:
                 manager.set_dim_factor(room_state.dim_factor)
             if room_state.active_routine is None:
                 continue
-            klass = ROUTINES.get(room_state.active_routine)
-            if klass is None:
+            routine, error = resolve_routine(room_state.active_routine)
+            if error:
                 print(f"[engine] unknown routine '{room_state.active_routine}' for room '{room_key}', skipping restore")
                 continue
-            _, error = await manager.start(klass())
+            _, error = await manager.start(routine)
             if error:
                 print(f"[engine] restore '{room_state.active_routine}' in '{room_key}' failed: {error}")
 

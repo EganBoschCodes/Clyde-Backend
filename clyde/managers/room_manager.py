@@ -7,6 +7,7 @@ import clyde.utils as utils
 
 from clyde.events.types import Event, EventContext
 from clyde.realtime import BUS, LightOnEvent, RoomDimEvent, RoomEventEvent, RoomStateEvent
+from clyde.routines.custom import PREVIEW_KEY
 from clyde.routines.types import LightRoutine
 from clyde.state import STATE
 
@@ -51,7 +52,7 @@ class RoomManager:
         return utils.ok(factor)
 
     def persist_active(self) -> None:
-        name = self.active.NAME if self.active is not None else None
+        name = self.active.NAME if self.active is not None and self.active.NAME != PREVIEW_KEY else None
         _, error = STATE.set_room_routine(self.room_key, name)
         if error:
             print(f"[room_manager] persist active in '{self.room_key}' failed: {error}")

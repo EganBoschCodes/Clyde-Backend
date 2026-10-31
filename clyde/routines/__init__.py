@@ -17,6 +17,7 @@ from .routine_directory import (
     Spring,
     Sunset,
 )
+from .custom import CustomRoutineSpec, build_custom_routine
 from .types import LightRoutine
 
 ROUTINES: dict[str, type[LightRoutine]] = {

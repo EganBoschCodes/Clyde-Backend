@@ -38,6 +38,8 @@ class TransitionalPaletteRoutine(LightRoutine):
             choices = tuple(c for c in self.PALETTE if c not in in_use)
             if not choices:
                 choices = tuple(c for c in self.PALETTE if c != prior) if prior is not None else self.PALETTE
+            if not choices:
+                choices = self.PALETTE
             color = self.rng.choice(choices)
             transition = self.rng.uniform(trans_min, trans_max)
             pause = self.rng.uniform(pause_min, pause_max)

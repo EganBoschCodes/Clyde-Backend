@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from clyde.routines.custom.types import CustomRoutineSpec
 from clyde.scheduler.types import ScheduledEvent
 
 
@@ -11,3 +12,4 @@ class RoomState(BaseModel):
 class PersistedState(BaseModel):
     schedules: list[ScheduledEvent] = Field(default_factory=list)
     rooms: dict[str, RoomState] = Field(default_factory=dict)
+    custom_routines: dict[str, CustomRoutineSpec] = Field(default_factory=dict)
