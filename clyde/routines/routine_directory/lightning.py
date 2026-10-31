@@ -73,6 +73,10 @@ class Lightning(LightRoutine):
         if self.next_flash_at is None:
             self.schedule_next(now)
 
+        # All lights may be pinned out of the routine
+        if not lights:
+            return {}
+
         if self.queue:
             return self.queue.popleft()
 

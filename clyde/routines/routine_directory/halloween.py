@@ -101,6 +101,11 @@ class Halloween(TransitionalPaletteRoutine):
         frame = await super().step(now, lights)
         if not lights:
             return frame
+
+        # Lights pinned out of the room mid-haunt drop their ghost state
+        for key in [k for k in self.ghosts if k not in lights]:
+            del self.ghosts[key]
+        self.recover.intersection_update(lights)
         if self.next_ghost_at is None:
             self.next_ghost_at = self.elapsed + self.rng.uniform(GHOST_MIN_GAP_S, GHOST_MAX_GAP_S) / 2
         if self.next_lightning_at is None:

@@ -10,7 +10,7 @@ import clyde.utils as utils
 from clyde.routines.custom.types import CustomRoutineSpec
 from clyde.scheduler.types import ScheduledEvent
 
-from .types import PersistedState, RoomState
+from .types import PersistedState, Pin, RoomState
 
 
 STATE_PATH = Path(__file__).resolve().parents[2] / "state.json"
@@ -107,6 +107,14 @@ class StateStore:
         with self.lock:
             current = self.state.rooms.get(room) or RoomState()
             updated = current.model_copy(update={"dim_factor": factor})
+            rooms = {**self.state.rooms, room: updated}
+            self.state = self.state.model_copy(update={"rooms": rooms})
+            return self.write()
+
+    def set_room_pins(self, room: str, pins: dict[str, Pin]) -> utils.Result[None]:
+        with self.lock:
+            current = self.state.rooms.get(room) or RoomState()
+            updated = current.model_copy(update={"pins": dict(pins)})
             rooms = {**self.state.rooms, room: updated}
             self.state = self.state.model_copy(update={"rooms": rooms})
             return self.write()

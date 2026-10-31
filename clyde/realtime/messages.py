@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from clyde.state.types import Pin
+
 
 class RoomStateEvent(BaseModel):
     type: Literal["room_state"] = "room_state"
@@ -30,4 +32,18 @@ class LightOnEvent(BaseModel):
     transition: float | None
 
 
-type RealtimeEvent = RoomStateEvent | RoomEventEvent | RoomDimEvent | LightOnEvent
+class LightOffEvent(BaseModel):
+    type: Literal["light_off"] = "light_off"
+    room: str
+    light: str
+    transition: float | None
+
+
+class LightPinEvent(BaseModel):
+    type: Literal["light_pin"] = "light_pin"
+    room: str
+    light: str
+    pin: Pin | None
+
+
+type RealtimeEvent = RoomStateEvent | RoomEventEvent | RoomDimEvent | LightOnEvent | LightOffEvent | LightPinEvent

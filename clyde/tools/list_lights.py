@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 
 from clyde.mcp_app import MCP
+from clyde.managers import ENGINE
+from clyde.state import Pin
 
 import clyde.utils as utils
 
@@ -9,13 +11,14 @@ class LightInfo(BaseModel):
     name: str
     entity_id: str
     room: str | None
+    pin: Pin | None = None
 
 
 class ListLightsResult(BaseModel):
     lights: list[LightInfo]
 
 
-@MCP.tool(description="List all configured lights with their entity_id and the room they belong to. Optionally filter by room.")
+@MCP.tool(description="List all configured lights with their entity_id, the room they belong to, and their pin (null unless the light is pinned out of its room's routine). Optionally filter by room.")
 async def list_lights(room: str | None = None) -> ListLightsResult:
     light_to_room: dict[str, str] = {}
     for room_key, room_cfg in utils.CONFIG.rooms.items():
@@ -27,5 +30,7 @@ async def list_lights(room: str | None = None) -> ListLightsResult:
         owner = light_to_room.get(key)
         if room is not None and owner != room:
             continue
-        out.append(LightInfo(name=key, entity_id=light.entity_id, room=owner))
+        manager = ENGINE.managers.get(owner) if owner is not None else None
+        pin = manager.pins.get(key) if manager is not None else None
+        out.append(LightInfo(name=key, entity_id=light.entity_id, room=owner, pin=pin))
     return ListLightsResult(lights=out)

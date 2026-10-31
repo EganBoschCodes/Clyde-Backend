@@ -17,6 +17,7 @@ from .media_player_select_source import media_player_select_source
 from .media_player_state import media_player_state
 from .media_player_transport import media_player_transport
 from .media_player_volume import media_player_volume
+from .release_light import release_light
 from .remove_schedule import remove_schedule
 from .room_off import room_off
 from .save_custom_routine import save_custom_routine

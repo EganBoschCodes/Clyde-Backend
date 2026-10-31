@@ -3,7 +3,7 @@ import clyde.utils as utils
 from clyde.events.types import Event
 from clyde.routines.resolve import resolve_routine
 from clyde.routines.types import LightRoutine
-from clyde.state import STATE
+from clyde.state import STATE, RoomState
 
 from .room_manager import RoomManager
 
@@ -68,15 +68,20 @@ class Engine:
                 continue
             if room_state.dim_factor != 1.0:
                 manager.set_dim_factor(room_state.dim_factor)
-            if room_state.active_routine is None:
-                continue
+            # start() clears pins, so they are re-applied after the routine is running
+            await self.restore_room(manager, room_key, room_state)
+
+    async def restore_room(self, manager: RoomManager, room_key: str, room_state: RoomState) -> None:
+        if room_state.active_routine is not None:
             routine, error = resolve_routine(room_state.active_routine)
             if error:
                 print(f"[engine] unknown routine '{room_state.active_routine}' for room '{room_key}', skipping restore")
-                continue
-            _, error = await manager.start(routine)
-            if error:
-                print(f"[engine] restore '{room_state.active_routine}' in '{room_key}' failed: {error}")
+            else:
+                _, error = await manager.start(routine)
+                if error:
+                    print(f"[engine] restore '{room_state.active_routine}' in '{room_key}' failed: {error}")
+        if room_state.pins:
+            await manager.restore_pins(room_state.pins)
 
     async def shutdown(self) -> None:
         for manager in self.managers.values():

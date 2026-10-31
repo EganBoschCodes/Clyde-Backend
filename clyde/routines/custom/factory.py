@@ -85,9 +85,13 @@ class StaticRoutine(LightRoutine):
         self.palette = palette
         self.brightness = brightness
         self.ticks = 0
+        self.last_lights: tuple[str, ...] = ()
 
     async def step(self, now: datetime, lights: list[str]) -> dict[str, LightOnPayload]:
-        due = self.ticks % STATIC_REEMIT_TICKS == 0
+        # Re-emit immediately when lights join or leave (pin/release) instead of waiting out the interval
+        changed = tuple(lights) != self.last_lights
+        self.last_lights = tuple(lights)
+        due = changed or self.ticks % STATIC_REEMIT_TICKS == 0
         self.ticks += 1
         if not due:
             return {}
