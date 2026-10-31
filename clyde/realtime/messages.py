@@ -9,6 +9,12 @@ class RoomStateEvent(BaseModel):
     active_routine: str | None
 
 
+class RoomEventEvent(BaseModel):
+    type: Literal["room_event"] = "room_event"
+    room: str
+    active_event: str | None
+
+
 class RoomDimEvent(BaseModel):
     type: Literal["room_dim"] = "room_dim"
     room: str
@@ -24,4 +30,4 @@ class LightOnEvent(BaseModel):
     transition: float | None
 
 
-type RealtimeEvent = RoomStateEvent | RoomDimEvent | LightOnEvent
+type RealtimeEvent = RoomStateEvent | RoomEventEvent | RoomDimEvent | LightOnEvent

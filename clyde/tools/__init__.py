@@ -1,4 +1,5 @@
 from .add_schedule import add_schedule
+from .cancel_event import cancel_event
 from .fire_event import fire_event
 from .light_off import light_off
 from .light_on import light_on

@@ -109,12 +109,29 @@ preemption:
    `LightState` so it can be restored bit-for-bit.
 2. **Cancel** — stop the active routine task (the routine *instance* is
    kept in memory).
-3. **Run** — `await event.run(ctx)`. Exceptions during run still trigger
-   restore.
+3. **Run** — the event executes in its own task (`RoomManager.event_task`,
+   with `active_event` set). Exceptions during run still trigger restore.
+   A `room_event` realtime message (`active_event` set) is published.
 4. **Resume** — if `run` returned a `LightRoutine`, start it. Otherwise:
-   - If a prior routine existed, resume it (state preserved).
+   - If a prior routine existed, resume it (state preserved) and publish
+     a `room_state` message.
    - Otherwise, restore each light's snapshotted state with a short
      transition (`EVENT_RESTORE_TRANSITION_S`, 0.3s).
+5. **End** — a `room_event` message with `active_event: null` is published.
+
+### Cancelling an event
+
+`RoomManager.cancel_event()` (exposed as `Engine.cancel_event`, the MCP
+tool `cancel_event`, and `DELETE /api/rooms/{room}/event`) cancels the
+event task and returns `True` if an event was running. The manager then
+restores exactly as for a normal `None` completion; a follow-up routine the
+event would have returned is discarded. `fire_event` distinguishes this
+(via flags set by the canceller) from its own caller being cancelled,
+which is re-raised after restoring.
+
+Starting a routine, stopping, applying a single light, or turning lights
+off while an event is running also cancels the event first, but in that
+case the prior routine is *not* restored: the new action wins.
 
 `event_lock` serializes events per-room so two events cannot interleave.
 

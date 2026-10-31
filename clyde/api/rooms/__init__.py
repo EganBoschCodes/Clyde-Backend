@@ -1,3 +1,4 @@
+from .cancel_event import cancel_event_route
 from .fire_event import fire_event_route
 from .list_rooms import list_rooms_route
 from .room_off import room_off_route

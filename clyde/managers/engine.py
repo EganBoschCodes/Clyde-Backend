@@ -40,6 +40,12 @@ class Engine:
             return utils.err(error, f"stop routine in '{room}'")
         return await manager.stop()
 
+    async def cancel_event(self, room: str) -> utils.Result[bool]:
+        manager, error = self.get(room)
+        if error:
+            return utils.err(error, f"cancel event in '{room}'")
+        return await manager.cancel_event()
+
     def set_dim_factor(self, room: str, factor: float) -> utils.Result[float]:
         manager, error = self.get(room)
         if error:

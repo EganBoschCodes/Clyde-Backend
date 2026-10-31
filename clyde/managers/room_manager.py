@@ -6,7 +6,7 @@ from home_assistant_lib import Light, LightOffPayload, LightOnPayload, LightStat
 import clyde.utils as utils
 
 from clyde.events.types import Event, EventContext
-from clyde.realtime import BUS, LightOnEvent, RoomDimEvent, RoomStateEvent
+from clyde.realtime import BUS, LightOnEvent, RoomDimEvent, RoomEventEvent, RoomStateEvent
 from clyde.routines.types import LightRoutine
 from clyde.state import STATE
 
@@ -25,6 +25,11 @@ class RoomManager:
         self.active: LightRoutine | None = None
         self.task: asyncio.Task[None] | None = None
         self.event_lock = asyncio.Lock()
+        self.event_task: asyncio.Task[LightRoutine | None] | None = None
+        self.active_event: Event | None = None
+        self.event_done: asyncio.Future[None] | None = None
+        self.event_cancel_requested = False
+        self.event_superseded = False
         self.dim_factor: float = 1.0
         self.wake = asyncio.Event()
         self.last_payloads: dict[str, LightOnPayload] = {}
@@ -67,6 +72,7 @@ class RoomManager:
         ))
 
     async def start(self, routine: LightRoutine) -> utils.Result[None]:
+        await self.supersede_event()
         await self.cancel_active()
         self.active = routine
         self.last_payloads = {}
@@ -83,9 +89,11 @@ class RoomManager:
             self.persist_active()
 
     async def halt(self) -> None:
+        await self.supersede_event()
         await self.cancel_task()
 
     async def stop(self) -> utils.Result[None]:
+        await self.supersede_event()
         had_active = self.active is not None
         await self.cancel_active()
         if had_active:
@@ -101,39 +109,113 @@ class RoomManager:
                 pass
             self.task = None
 
+    async def interrupt_event(self, superseded: bool) -> bool:
+        done = self.event_done
+        if self.active_event is None or done is None:
+            return False
+        already = self.event_cancel_requested or self.event_superseded
+        if superseded:
+            self.event_superseded = True
+        else:
+            self.event_cancel_requested = True
+        if self.event_task is not None:
+            self.event_task.cancel()
+        await asyncio.shield(done)
+        return not already
+
+    async def cancel_event(self) -> utils.Result[bool]:
+        cancelled = await self.interrupt_event(superseded=False)
+        return utils.ok(cancelled)
+
+    async def supersede_event(self) -> None:
+        await self.interrupt_event(superseded=True)
+
+    def begin_event(self, event: Event) -> None:
+        self.active_event = event
+        self.event_cancel_requested = False
+        self.event_superseded = False
+        self.event_done = asyncio.get_running_loop().create_future()
+        BUS.publish(RoomEventEvent(room=self.room_key, active_event=event.NAME))
+
+    def end_event(self) -> None:
+        self.event_task = None
+        self.active_event = None
+        BUS.publish(RoomEventEvent(room=self.room_key, active_event=None))
+
+    def finish_event(self) -> None:
+        done = self.event_done
+        self.event_done = None
+        if done is not None and not done.done():
+            done.set_result(None)
+
     async def fire_event(self, event: Event) -> utils.Result[None]:
         async with self.event_lock:
-            prior_routine = self.active
-            prior_states: dict[str, LightState] = {}
-            if prior_routine is None:
-                for key, light in self.lights.items():
-                    state, error = await light.get_state()
-                    if error or state is None:
-                        continue
-                    prior_states[key] = state
-            await self.cancel_task()
+            self.begin_event(event)
             try:
-                follow_up = await event.run(EventContext(room_key=self.room_key, lights=self.lights, set_dim_factor=self.set_dim_factor))
-            except Exception as e:
+                return await self.run_event(event)
+            finally:
+                self.end_event()
+                self.finish_event()
+
+    async def run_event(self, event: Event) -> utils.Result[None]:
+        prior_routine = self.active
+        prior_states: dict[str, LightState] = {}
+        if prior_routine is None:
+            for key, light in self.lights.items():
+                state, error = await light.get_state()
+                if error or state is None:
+                    continue
+                prior_states[key] = state
+
+        # Cancelled or superseded before the event ever started
+        if self.event_cancel_requested or self.event_superseded:
+            return utils.ok(None)
+
+        await self.cancel_task()
+        ctx = EventContext(room_key=self.room_key, lights=self.lights, set_dim_factor=self.set_dim_factor)
+        task = asyncio.create_task(event.run(ctx))
+        self.event_task = task
+        try:
+            follow_up = await task
+        except asyncio.CancelledError:
+            # Distinguish cancel_event/supersede (flags) from the caller itself being cancelled
+            interrupted = self.event_cancel_requested or self.event_superseded
+            if not self.event_superseded:
                 await self.restore_after_event(prior_routine, prior_states)
-                return utils.err(e, f"event '{event.NAME}' in '{self.room_name}'")
-            if follow_up is not None:
-                self.active = follow_up
-                self.task = asyncio.create_task(self.run_loop(follow_up))
-                self.persist_active()
-            else:
+            if not interrupted:
+                raise
+            return utils.ok(None)
+        except Exception as e:
+            if not self.event_superseded:
+                await self.restore_after_event(prior_routine, prior_states)
+            return utils.err(e, f"event '{event.NAME}' in '{self.room_name}'")
+
+        if self.event_superseded or self.event_cancel_requested:
+            if not self.event_superseded:
                 await self.restore_after_event(prior_routine, prior_states)
             return utils.ok(None)
+        if follow_up is not None:
+            self.active = follow_up
+            self.task = asyncio.create_task(self.run_loop(follow_up))
+            self.persist_active()
+            BUS.publish(RoomStateEvent(room=self.room_key, active_routine=follow_up.NAME))
+        else:
+            await self.restore_after_event(prior_routine, prior_states)
+        return utils.ok(None)
 
     async def restore_after_event(self, prior_routine: LightRoutine | None, prior_states: dict[str, LightState]) -> None:
         if prior_routine is not None:
             self.active = prior_routine
             self.task = asyncio.create_task(self.run_loop(prior_routine))
+            BUS.publish(RoomStateEvent(room=self.room_key, active_routine=prior_routine.NAME))
             return
         for key, state in prior_states.items():
+            if self.event_superseded:
+                return
             await self.lights[key].restore(state, EVENT_RESTORE_TRANSITION_S)
 
     async def apply_on(self, light_key: str, payload: LightOnPayload) -> utils.Result[None]:
+        await self.supersede_event()
         await self.cancel_active()
         light = self.lights.get(light_key)
         if light is None:
@@ -146,6 +228,7 @@ class RoomManager:
         return utils.ok(None)
 
     async def apply_off(self, light_key: str, transition: float = DEFAULT_OFF_TRANSITION_S) -> utils.Result[None]:
+        await self.supersede_event()
         await self.cancel_active()
         light = self.lights.get(light_key)
         if light is None:
@@ -157,6 +240,7 @@ class RoomManager:
         return utils.ok(None)
 
     async def apply_off_all(self, transition: float = DEFAULT_OFF_TRANSITION_S) -> utils.Result[dict[str, str]]:
+        await self.supersede_event()
         await self.cancel_active()
         payload = LightOffPayload(transition=transition)
         entity_ids = [light.entity_id for light in self.lights.values()]
