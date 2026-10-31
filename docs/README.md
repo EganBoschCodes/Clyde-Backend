@@ -74,7 +74,7 @@ A `config.json` at the repo root defines `lights`, `rooms`, and
 | `clyde/routines/` | Long-running per-room light behaviors (`LightRoutine` subclasses) |
 | `clyde/events/` | Transient per-room behaviors that preempt routines (`Event` subclasses) |
 | `clyde/scheduler/` | Cron-like schedules, persisted via the state store |
-| `clyde/state/` | `state.json` persistence: schedules, active routine per room, dim factor per room, custom (Studio) routines |
+| `clyde/state/` | `state.json` persistence: schedules, active routine per room, dim factor and pinned lights per room, custom (Studio) routines |
 | `clyde/utils/` | Config loading, HTTP client helpers, `Result` type |
 
 `clyde/server.py` mounts the FastMCP app at `/mcp`, wraps it with
@@ -86,7 +86,7 @@ A `config.json` at the repo root defines `lights`, `rooms`, and
 
 | Document | Description |
 |----------|-------------|
-| [routines.md](./routines.md) | Authoring long-running per-room light behaviors |
+| [routines.md](./routines.md) | Authoring long-running per-room light behaviors, plus per-light pinning and its HTTP/realtime API |
 | [events.md](./events.md) | Authoring transient, preempting light behaviors |
 | [media_players.md](./media_players.md) | Fire TV (ADB) integration + keepalive timer |
 | [changelogs/](./changelogs/) | Version history and release notes |

@@ -32,9 +32,14 @@ Defined in `clyde/routines/types.py`:
 | `tick_interval` | `ClassVar[float]` | Seconds between `step` invocations |
 | `step(now, lights)` | `async` method | Returns `dict[light_key, LightOnPayload]` for this frame |
 
-`step` receives the current `datetime` and the list of light keys in the
-room. Return only the keys you want to update — omitted lights keep
-their last payload.
+`step` receives the current `datetime` and the list of **unpinned** light
+keys in the room (see [Light Pinning](#light-pinning)). Return only the
+keys you want to update — omitted lights keep their last payload.
+
+The list can change between ticks (lights are pinned and released while
+the routine runs) and can be empty. Routines must tolerate both: never
+index into `lights` without a guard, and keep per-light state keyed by
+light key rather than by position.
 
 ---
 
@@ -131,17 +136,56 @@ HTTP: `GET /api/studio/routines`, `PUT /api/studio/routines`,
 
 ---
 
+## Light Pinning
+
+Touching a single light (`light_on` / `light_off` over MCP, or
+`PUT /api/lights/{light}` over HTTP) **pins** it: the light leaves the
+room's routine and holds the manual state while the routine keeps
+animating the other lights.
+
+- A pin is `{on, rgb_color, brightness}`. Omitted color/brightness keep
+  the light's current values (warm white at full brightness if unknown).
+- Pinned lights are excluded from `step` and never receive routine
+  frames. The room dim factor does not scale them (pinned brightness is
+  absolute).
+- `release_light` / `DELETE /api/lights/{light}/pin` releases a pin. With
+  an active routine the light rejoins on the next tick with a short
+  (~1s) transition; with no routine it simply stays as it is.
+- Room-level actions win: starting a routine, stopping it, or turning the
+  room off clears every pin in that room.
+- [Events](./events.md) still act on all lights; pins are re-applied when
+  the event ends.
+- Pins are persisted per room in `state.json` and re-applied on restart.
+
+HTTP:
+
+| Route | Body | Response |
+|-------|------|----------|
+| `GET /api/lights` | | each light: `{name, entity_id, room, pin}` (`pin` is null when unpinned) |
+| `PUT /api/lights/{light}` | `{on, rgb_color?, brightness? (1-255), transition?}` | `{light, room, pin}` |
+| `DELETE /api/lights/{light}/pin` | | `{light, room, released}` |
+| `GET /api/rooms` | | each room also carries `pins: {light: pin}` |
+
+Realtime (`/api/ws`) adds `{"type": "light_pin", room, light, pin | null}`
+(on pin, update and release, including releases from room-level actions)
+and `{"type": "light_off", room, light, transition | null}` (whenever a
+light is turned off through the manager).
+
+---
+
 ## Lifecycle
 
 `RoomManager.run_loop` (`clyde/managers/room_manager.py`) drives the
 routine:
 
-- Calls `step` every `tick_interval` seconds.
+- Calls `step` every `tick_interval` seconds with the currently
+  unpinned lights (recomputed each tick).
 - Applies global dim factor via `scale_payload` before sending.
 - On the first tick, overrides `transition` with `HANDOFF_TRANSITION_S`
   (2.0s) for a smooth visual handoff from whatever was on screen.
 - Groups identical payloads into a single `turn_on_many` call to reduce
   HA traffic.
+- Releasing a pin wakes the loop so the light rejoins promptly.
 - A dim-factor change wakes the loop early and snaps brightness with a
   short transition rather than waiting for the next natural tick.
 
