@@ -1,4 +1,4 @@
-from .event_directory import Alarm, ColorWipe, Doorbell, MiniParty, Notify, Roulette
+from .event_directory import Alarm, ColorWipe, Doorbell, MiniParty, Notify, Roulette, Spooky
 from .types import Event, EventContext
 
 EVENTS: dict[str, type[Event]] = {
@@ -8,4 +8,5 @@ EVENTS: dict[str, type[Event]] = {
     MiniParty.NAME: MiniParty,
     Notify.NAME: Notify,
     Roulette.NAME: Roulette,
+    Spooky.NAME: Spooky,
 }

@@ -86,6 +86,18 @@ this entry the routine is unreachable.
 
 ---
 
+## Layered Routines
+
+A routine can build on a base class and layer behavior on top of it.
+`halloween` extends `TransitionalPaletteRoutine` (pumpkin oranges, witchy
+purples, an occasional slime green) and adds two overlays: a per-lamp
+"ghost passing" (dim, rapid flicker, sometimes an eerie green flash, then a
+fade back to the palette) and a rare room-wide cold violet-white
+"lightning" flicker. Overlay sequences are queued per tick; a light that
+is mid-ghost has its drift payloads dropped until it recovers.
+
+---
+
 ## Lifecycle
 
 `RoomManager.run_loop` (`clyde/managers/room_manager.py`) drives the

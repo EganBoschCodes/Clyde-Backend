@@ -75,6 +75,13 @@ async def run(self, ctx: EventContext) -> LightRoutine | None:
     return Party()
 ```
 
+Built-in events include `notify`, `doorbell`, `alarm`, `color_wipe`,
+`roulette`, `mini_party` (about 1.25 seconds of rapid color changes) and
+`spooky` (a roughly 5.5 second jump-scare: fade to near-black, a green and
+purple stutter crawling lamp to lamp, a beat of darkness, then a sharp
+white/orange flash). Events must not swallow `asyncio.CancelledError` so
+they can be stopped mid-run.
+
 ---
 
 ## Registration

@@ -5,6 +5,7 @@ from .disco import Disco
 from .fire import Fire
 from .focus import Focus
 from .forest import Forest
+from .halloween import Halloween
 from .iridescent import Iridescent
 from .lightning import Lightning
 from .love import Love

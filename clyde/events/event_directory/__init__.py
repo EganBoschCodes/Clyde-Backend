@@ -3,4 +3,5 @@ from .doorbell import Doorbell
 from .mini_party import MiniParty
 from .notify import Notify
 from .roulette import Roulette
+from .spooky import Spooky
 from .alarm import Alarm
