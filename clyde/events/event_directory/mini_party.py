@@ -9,8 +9,8 @@ from clyde.routines.types import LightRoutine
 from ..types import Event, EventContext
 
 
-DURATION_S = 5.0
-TICK_INTERVAL = 0.2
+DURATION_S = 1.25
+TICK_INTERVAL = 0.15
 
 
 class MiniParty(Event):
